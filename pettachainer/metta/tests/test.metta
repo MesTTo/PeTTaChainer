@@ -41,6 +41,17 @@
       (STV 1.0 1.0)))
 
 !(test
+   (list-count
+      (collapse
+         (mm2compile kb
+            (: foldRule
+               (Implication
+                  (Premises (FoldAll (Score $name $n) $n 0 (|-> ($acc $elem) (+ $acc $elem)) -> $total))
+                  (Conclusions (ScoreTotal $total)))
+               (STV 1.0 1.0)))))
+   1)
+
+!(test
    (query 30 kb (: $prf (ScoreTotal $x) $tv))
    (: (rule-proof foldRule cpu) (ScoreTotal 6) (STV 1.0 0.9)))
 

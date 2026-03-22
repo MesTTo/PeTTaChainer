@@ -109,9 +109,6 @@
       ((reverse $resNNprms) |-
          ((: $kb (cons conjunction $rcclprf) (cons $head $rccltype) $ccltv)))))
 
-(= (compile-inputs (: $kb $prf (CPU $f $args $res) $tv))
-   ((cons (CPU $f $args $res) ()) |-
-      ((: $kb cpu (CPU $f $args $res) (cpu-premise-tv $f $args $res)))))
 (= (compile-inputs (: $kb $prf (cons $head $tail) $tv))
    (if (and (not (is-var $head)) (is-member $head (And Or LikelierThan)))
       (superpose ((inTemplate $kb (atom_concat $head Formula) $head $tail)

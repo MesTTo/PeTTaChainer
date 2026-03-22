@@ -10,5 +10,5 @@
       (STV 1.0 1.0)))
 
 !(test (collapse (query 20 openQueryKb (: $prf (Animal $a) $tv)))
-   ((: (rule-proof (no_inverse dog_to_animal) d2) (Animal ann) (STV 1.0 0.9))
-      (: (rule-proof (no_inverse dog_to_animal) d1) (Animal max) (STV 1.0 0.9))))
+   ((: (rule-proof (no_inverse dog_to_animal) d1) (Animal max) (STV 1.0 0.9))
+      (: (rule-proof (no_inverse dog_to_animal) d2) (Animal ann) (STV 1.0 0.9))))

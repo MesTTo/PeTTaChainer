@@ -162,31 +162,32 @@
         ((CPU FoldAllFormulaCompiled ($_compiled-query $_pattern $_value $_init $_fun) $_goalres)
            true)
         (((CPU FoldAllFormulaCompiled ($_compiled-query $_pattern $_value $_init $_fun) $_goalres)
-              ($_kbid $_ctx $_vars)
-              $_prf
-              $_tv)
+             ($_kbid $_ctx $_vars)
+             $_prf
+             $_tv)
            true)
         ((CPU FoldAllTVFormulaCompiled ($_compiled-query $_init $_fun) $_goalres)
            true)
         (((CPU FoldAllTVFormulaCompiled ($_compiled-query $_init $_fun) $_goalres)
-              ($_kbid $_ctx $_vars)
-              $_prf
-              $_tv)
+             ($_kbid $_ctx $_vars)
+             $_prf
+             $_tv)
            true)
         ((CPU FoldAllTVRuntimeFormula ($_kb $_pattern $_init $_fun) $_goalres)
            true)
         (((CPU FoldAllTVRuntimeFormula ($_kb $_pattern $_init $_fun) $_goalres)
-              ($_kbid $_ctx $_vars)
-              $_prf
-              $_tv)
+             ($_kbid $_ctx $_vars)
+             $_prf
+             $_tv)
            true)
         ((CPU DistAverageFormula ($_kb $_pattern) $_goalres)
            true)
-        (((CPU DistAverageFormula ($_kb $_pattern) $_goalres) ($_kbid $_ctx $_vars)
-              $_prf
-              $_tv)
+        (((CPU DistAverageFormula ($_kb $_pattern) $_goalres)
+             ($_kbid $_ctx $_vars)
+             $_prf
+             $_tv)
            true)
-        ($other false))))
+        ($other (trace! (nagg $other) false)))))
 
 (= (aggregate-compiled-child-goal $compiled-query)
    (let*
@@ -512,12 +513,16 @@
                  ((CPU Map2DistRuntimeFormula ($kb $fun $a $b) $out) ($kbid $ctx $vars)
                     $prf
                     $out)))))))
-(=
+(= 
    (direct-goal-results $steps
       ((CPU $fun $args $_goalres) ($kbid $ctx $vars) $prf $_tv))
    (if (specialized-runtime-cpu-fun? $fun) (empty)
       (let $res (cpu-call $steps $fun $args)
-         (superpose (((CPU $fun $args $res) ($kbid $ctx $vars) $prf $res))))))
+         (superpose
+            (((CPU $fun $args $res)
+                 ($kbid $ctx $vars)
+                 $prf
+                 (cpu-premise-tv $fun $args $res)))))))
 (= (direct-goal-results $steps (CPU $fun $args $_res))
    (superpose ((CPU $fun $args (cpu-call $steps $fun $args)))))
 (= (direct-goal-results $steps $goal)
