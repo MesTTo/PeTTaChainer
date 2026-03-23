@@ -5,7 +5,7 @@
 (= (first-or () $default) $default)
 (= (first-or (cons $x $_rest) $_default) $x)
 
-(= (one-or-empty $x) (if (== $x ()) () (cons $x ())))
+(= (one-or-empty $x) (if (== $x ()) () ($x)))
 
 (= (nonempty? ()) false)
 (= (nonempty? (cons $_ $_rest)) true)
@@ -157,17 +157,6 @@
 (= (normalize-heap $agenda)
    (if (== $agenda ()) (empty_heap) $agenda))
 
-(= (aggregate-runtime-cpu-fun? $fun)
-   (is-member $fun
-      (()
-         FoldAllFormulaCompiled
-         FoldAllTVFormulaCompiled
-         FoldAllTVRuntimeFormula
-         DistAverageFormula)))
-
-(= (specialized-runtime-cpu-fun? $fun)
-   (or (aggregate-runtime-cpu-fun? $fun) (== $fun Map2DistRuntimeFormula)))
-
 (= (needs-steps-cpu-fun? $fun)
    (is-member $fun (() Map2DistRuntimeFormula)))
 
@@ -183,8 +172,10 @@
 (= (aggregate-compiled-query $kb $pattern)
    (internalize-proof-structure-list (collapse (mm2compileQuery $kb (: $prf $pattern $tvin)))))
 
-(= (aggregate-runtime-goal? $goal)
-   (if (= $goal (CPU $fun $_args $_goalres)) (aggregate-runtime-cpu-fun? $fun) false))
+(= (aggregate-goal? $goal)
+   (if (= $goal (CPU $fun $_args $_goalres))
+      (is-member $fun (() FoldAllFormulaCompiled FoldAllTVFormulaCompiled))
+      false))
 
 (= (aggregate-compiled-child-goal $compiled-query)
    (let*
@@ -193,37 +184,19 @@
         ($child-goal (compiled-query-goal-head $compiled-query)))
       $child-goal))
 
-(= (aggregate-config FoldAllFormulaCompiled ($kb $pattern $value $init $fun))
-   (agg-config
+(= (aggregate-goal-spec (CPU FoldAllFormulaCompiled ($kb $pattern $value $init $fun) $_goalres))
+   (aggregate-spec
       (aggregate-compiled-child-goal (aggregate-compiled-query $kb $pattern))
       $init
       (aggregate-step-fold-value $fun $pattern $value)
-      identity))
+      (aggregate-result-bare FoldAllFormulaCompiled ($kb $pattern $value $init $fun) identity)))
 
-(= (aggregate-config FoldAllTVFormulaCompiled ($kb $pattern $init $fun $finish))
-   (agg-config
+(= (aggregate-goal-spec (CPU FoldAllTVFormulaCompiled ($kb $pattern $init $fun $finish) $_goalres))
+   (aggregate-spec
       (aggregate-compiled-child-goal (aggregate-compiled-query $kb $pattern))
       $init
       (aggregate-step-fold-tv $fun)
-      $finish))
-
-(= (aggregate-config FoldAllTVRuntimeFormula ($kb $pattern $init $fun))
-   (agg-config
-      (aggregate-compiled-child-goal (aggregate-compiled-query $kb $pattern))
-      $init
-      (aggregate-step-fold-tv $fun)
-      identity))
-
-(= (aggregate-config DistAverageFormula ($kb $pattern))
-   (agg-config
-      (aggregate-compiled-child-goal (aggregate-compiled-query $kb $pattern))
-      (SumCount (PointMass 0.0) 0)
-      aggregate-step-dist-average
-      dist-average))
-
-(= (aggregate-goal-spec (CPU $fun $args $_goalres))
-   (let (agg-config $child $init $step $mode) (aggregate-config $fun $args)
-      (aggregate-spec $child $init $step (aggregate-result-bare $fun $args $mode))))
+      (aggregate-result-bare FoldAllTVFormulaCompiled ($kb $pattern $init $fun $finish) $finish)))
 
 (= (aggregate-spec-child-goal (aggregate-spec $child-goal $_init $_step-spec $_result-spec))
    $child-goal)
@@ -613,7 +586,7 @@
 
 (= (expand-goal-heap $agenda $steps $score $gid)
    (let $goal (goal-term-by-id $gid)
-      (if (aggregate-runtime-goal? $goal)
+      (if (aggregate-goal? $goal)
          (let*
             (($_expand (add-atom &goal_expanded ($gid true)))
               ($nagenda0 (spawn-aggregate-goal-heap $agenda $score $gid $goal))

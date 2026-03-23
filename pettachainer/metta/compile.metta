@@ -75,10 +75,8 @@
          DistGreaterThanDistFormula
          DistMapFormula
          DistMap2Formula
-         DistAverageFormula
          Map2DistRuntimeFormula
-         FoldAllTVFormulaCompiled
-         FoldAllTVRuntimeFormula)))
+         FoldAllTVFormulaCompiled)))
 
 (= (cpu-premise-tv $f $args $res) (if (cpu-premise-tv-formula $f) $res (STV 1.0 1.0)))
 
