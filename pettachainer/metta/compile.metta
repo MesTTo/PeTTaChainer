@@ -50,18 +50,20 @@
         ((Compute $f $args -> $res) (CPU $f $args $res))
         ((Map2Dist $fun $a $b -> $out)
            (CPU Map2DistRuntimeFormula ($kb $fun $a $b) $out))
-        ((AverageDist $pattern -> $out) (CPU DistAverageFormula ($kb $pattern) $out))
-        ((FoldAllValue $pattern $value $init $fun -> $out)
-           (CPU FoldAllTVRuntimeFormula ($kb $pattern $init $fun) $out))
-        ((FoldAll $pattern $value $init $fun -> $out)
-           (CPU FoldAllFormulaCompiled
-              ((internalize-proof-structure-list
-                  (collapse (mm2compileQuery $kb (: $prf $pattern $tvin))))
+        ((AverageDist $pattern -> $out)
+           (CPU FoldAllTVFormulaCompiled
+              ($kb
                  $pattern
-                 $value
-                 $init
-                 $fun)
+                 (SumCount (PointMass 0.0) 0)
+                 DistSumCountAcc
+                 dist-average)
               $out))
+        ((FoldAllValue $pattern $value $init $fun -> $out)
+           (CPU FoldAllTVFormulaCompiled
+              ($kb $pattern $init $fun identity)
+              $out))
+        ((FoldAll $pattern $value $init $fun -> $out)
+           (CPU FoldAllFormulaCompiled ($kb $pattern $value $init $fun) $out))
         ($other $other))))
 
 (= (inline-premises $kb $premises) (map-flat (inline-premise $kb) $premises))
@@ -127,7 +129,21 @@
                  (cons (: $kb $prfa $a $tv_a)
                     (cons (CPU DistMap2Formula ($fun $tv_a $tv_b) $out) $accum))))
            ((AverageDist $pattern -> $out)
-              (cons (CPU DistAverageFormula ($kb $pattern) $out) $accum))
+              (cons
+                 (CPU FoldAllTVFormulaCompiled
+                    ($kb
+                       $pattern
+                       (SumCount (PointMass 0.0) 0)
+                       DistSumCountAcc
+                       dist-average)
+                    $out)
+                 $accum))
+           ((FoldAllValue $pattern $value $init $fun -> $out)
+              (cons
+                 (CPU FoldAllTVFormulaCompiled ($kb $pattern $init $fun identity) $out)
+                 $accum))
+           ((FoldAll $pattern $value $init $fun -> $out)
+              (cons (CPU FoldAllFormulaCompiled ($kb $pattern $value $init $fun) $out) $accum))
            (($rel $a $b)
               (if (is-member $rel (GreaterThan >))
                  (if (is-expr $b)

@@ -169,8 +169,7 @@
    (or (aggregate-runtime-cpu-fun? $fun) (== $fun Map2DistRuntimeFormula)))
 
 (= (needs-steps-cpu-fun? $fun)
-   (is-member $fun
-      (() FoldAllTVRuntimeFormula DistAverageFormula Map2DistRuntimeFormula)))
+   (is-member $fun (() Map2DistRuntimeFormula)))
 
 (= (compiled-query-goal-head (goal $query)) $query)
 (= (compiled-query-goal-head $compiled-query)
@@ -180,6 +179,9 @@
 
 (= (compiled-query-adds (goal $query)) ())
 (= (compiled-query-adds $compiled-query) (cdr-atom $compiled-query))
+
+(= (aggregate-compiled-query $kb $pattern)
+   (internalize-proof-structure-list (collapse (mm2compileQuery $kb (: $prf $pattern $tvin)))))
 
 (= (aggregate-runtime-goal? $goal)
    (if (= $goal (CPU $fun $_args $_goalres)) (aggregate-runtime-cpu-fun? $fun) false))
@@ -191,35 +193,30 @@
         ($child-goal (compiled-query-goal-head $compiled-query)))
       $child-goal))
 
-(= (aggregate-runtime-child-goal $kb $pattern)
-   (let ($rkbid $rctx $rvars) (runtime-kctx $kb)
-      (let $qpattern (runtime-query-pattern $pattern)
-         ($qpattern ($rkbid $rctx $rvars) $child-prf $child-tv))))
-
-(= (aggregate-config FoldAllFormulaCompiled ($compiled-query $pattern $value $init $fun))
+(= (aggregate-config FoldAllFormulaCompiled ($kb $pattern $value $init $fun))
    (agg-config
-      (aggregate-compiled-child-goal $compiled-query)
+      (aggregate-compiled-child-goal (aggregate-compiled-query $kb $pattern))
       $init
       (aggregate-step-fold-value $fun $pattern $value)
       identity))
 
-(= (aggregate-config FoldAllTVFormulaCompiled ($compiled-query $init $fun))
+(= (aggregate-config FoldAllTVFormulaCompiled ($kb $pattern $init $fun $finish))
    (agg-config
-      (aggregate-compiled-child-goal $compiled-query)
+      (aggregate-compiled-child-goal (aggregate-compiled-query $kb $pattern))
       $init
       (aggregate-step-fold-tv $fun)
-      identity))
+      $finish))
 
 (= (aggregate-config FoldAllTVRuntimeFormula ($kb $pattern $init $fun))
    (agg-config
-      (aggregate-runtime-child-goal $kb $pattern)
+      (aggregate-compiled-child-goal (aggregate-compiled-query $kb $pattern))
       $init
       (aggregate-step-fold-tv $fun)
       identity))
 
 (= (aggregate-config DistAverageFormula ($kb $pattern))
    (agg-config
-      (aggregate-runtime-child-goal $kb $pattern)
+      (aggregate-compiled-child-goal (aggregate-compiled-query $kb $pattern))
       (SumCount (PointMass 0.0) 0)
       aggregate-step-dist-average
       dist-average))
@@ -393,33 +390,6 @@
 (= (direct-goal-fact-match $goal $candidate)
    (let $goal-copy (copy_term $goal) (if (= $goal-copy $candidate) $candidate (empty))))
 
-(=
-   (direct-goal-results $steps
-      ((CPU FoldAllTVRuntimeFormula ($kb $pattern $init $fun) $_goalres)
-         ($kbid $ctx $vars)
-         $prf
-         $_tv))
-   (let*
-      (($qpattern (runtime-query-pattern $pattern))
-        ($out (reduce (reduce (FoldAllTVRuntimeNoStepsQuery $kb $qpattern $init $fun)))))
-      (superpose (
-           ((CPU FoldAllTVRuntimeFormula ($kb $pattern $init $fun) $out)
-              ($kbid $ctx $vars)
-              $prf
-              $out)))))
-(=
-   (direct-goal-results $steps
-      ((CPU DistAverageFormula ($kb $pattern) $_goalres) ($kbid $ctx $vars) $prf $_tv))
-   (let*
-      (($qpattern (runtime-query-pattern $pattern))
-        ($sumcount
-           (FoldAllTVRuntimeNoStepsQuery $kb
-              $qpattern
-              (SumCount (PointMass 0.0) 0)
-              DistSumCountAcc))
-        ($out (reduce (reduce (DistAverageFromSumCount $sumcount)))))
-      (superpose (
-           ((CPU DistAverageFormula ($kb $pattern) $out) ($kbid $ctx $vars) $prf $out)))))
 (=
    (direct-goal-results $steps
       ((CPU Map2DistRuntimeFormula ($kb $fun $a $b) $_goalres) ($kbid $ctx $vars)

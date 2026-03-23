@@ -84,6 +84,44 @@
    ((: (rule-proof foldZeroRule cpu) (Count MissingTotal 42) (STV 1.0 0.9))))
 
 !(compileadd kb
+   (: foldValueShapeRule
+      (Implication
+         (Premises
+            (FoldAllValue (Score $name $n)
+               $tvin
+               (NatDist ((0 1.0)))
+               NatDistAddBernoulliFromSTV
+               ->
+               $dist))
+         (Conclusions (ScoreDist $dist)))
+      (STV 1.0 1.0)))
+
+!(test
+   (match rules
+      ($id
+         (: (kb $ctx $vars) (foldValueShapeRule cpu) (ScoreDist $dist) $tv)
+         ((CPU FoldAllTVFormulaCompiled $call $dist)
+            (CPU MpFormula ((STV 1.0 1.0) $dist) $tv)))
+      ok)
+   ())
+
+!(compileadd kb
+   (: avgShapeRule
+      (Implication
+         (Premises (AverageDist (ScoreDistSrc $name) -> $avgDist))
+         (Conclusions (AvgScoreDist $avgDist)))
+      (STV 1.0 1.0)))
+
+!(test
+   (match rules
+      ($id
+         (: (kb $ctx $vars) (avgShapeRule cpu) (AvgScoreDist $avgDist) $tv)
+         ((CPU FoldAllTVFormulaCompiled $call $avgDist)
+            (CPU MpFormula ((STV 1.0 1.0) $avgDist) $tv)))
+      ok)
+   ())
+
+!(compileadd kb
    (: numFromCount
       (Implication (Premises (Count $name $n) (Compute NotEqual ($name MissingTotal) -> True))
          (Conclusions (Num $n)))
