@@ -42,7 +42,8 @@
                (($goal (goal-term-by-id $gid))
                  ($goal-view (goal-view $goal))
                  ($closed-proof-bonus (if (goal-view-has-type-vars? $goal-view) 0.0 1.0))
-                 ($bonus (if (== (goal-view-class $goal-view) proof) $closed-proof-bonus 2.0))
+                 ($bonus
+                    (if (= $goal-view (proof-goal $_kb $_type $_prf $_tv)) $closed-proof-bonus 2.0))
                  ($priority (- 0 (+ (* 1000000.0 $score) $bonus)))
                  ($nagenda (add_to_heap $agenda $priority (qitem $score $gid)))
                  ($_clear (clear-goal-pending-score $gid))
@@ -251,7 +252,11 @@
 (= (direct-goal-results-view $steps (cpu-goal $fun $args $_res))
    (superpose ((CPU $fun $args (cpu-call $steps $fun $args)))))
 (= (direct-goal-results-view $steps $goal-view)
-   (let $query-goal (goal-view-query-term $goal-view)
+   (let $query-goal
+      (if (= $goal-view (proof-goal $kb $type $prf $tv))
+         (let $qtype (if (and (is-expr $type) (contains-hash? $type)) (map-nested unwrap $type) $type)
+            ($qtype $kb $prf $tv))
+         (goal-view-term $goal-view))
       (match &kb $candidate
          (direct-goal-fact-match $query-goal $candidate))))
 
@@ -265,7 +270,11 @@
         ($ev (leaf-evidence-for-result $result))
         ($accepted (classify-goal-proof-candidate $gid $ev $score))
         ($nagenda (commit-proof-candidate-heap $agenda $gid $accepted (leaf-result-candidate $result $ev)))
-        ($nexact-hit (or $exact-hit (goal-view-exact-hit? $goal-view $result))))
+        ($nexact-hit
+           (or $exact-hit
+              (if (= $goal-view (proof-goal $kb $type $prf $tv))
+                 (=? ($type $kb $prf $tv) $result)
+                 (goal-key-eq? (goal-view-term $goal-view) $result)))))
       (expand-state $nagenda $nexact-hit)))
 
 (= (expand-direct-goal-heap $agenda $steps $gid $goal)
@@ -336,7 +345,9 @@
         ($goal-view (goal-view $goal))
         ($_expand (add-atom &goal_expanded ($gid true)))
         ($nagenda0
-           (if (goal-view-is-aggregate? $goal-view)
+           (if (if (= $goal-view (cpu-goal $fun $_args $_res))
+                  (is-member $fun (() FoldAllFormulaCompiled FoldAllTVFormulaCompiled))
+                  false)
               (spawn-aggregate-goal-heap $agenda $score $gid $goal-view)
               (expand-direct-goal-heap $agenda $steps $gid $goal)))
         ($nagenda (if (== $nagenda0 ()) (empty_heap) $nagenda0)))

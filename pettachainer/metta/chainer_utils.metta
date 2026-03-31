@@ -12,9 +12,6 @@
 (= (goal-view-term (cpu-goal $fun $args $res)) (CPU $fun $args $res))
 (= (goal-view-term (term-goal $goal)) $goal)
 
-(= (goal-view-class $goal-view)
-   (if (= $goal-view (proof-goal $_kb $_type $_prf $_tv)) proof direct))
-
 (= (goal-view-has-type-vars? $goal-view)
    (if (= $goal-view (proof-goal $_kb $type $_prf $_tv)) (not (== (extract-vars $type) ())) false))
 
@@ -22,22 +19,6 @@
    (if (= $goal-view (proof-goal $kb $type $_prf $_tv))
       (proof-goal-key $kb (sealed (extract-vars $type) $type))
       (direct-goal-key (sealed (extract-vars (goal-view-term $goal-view)) (goal-view-term $goal-view)))))
-
-(= (goal-view-query-term $goal-view)
-   (if (= $goal-view (proof-goal $kb $type $prf $tv))
-      (let $qtype (if (and (is-expr $type) (contains-hash? $type)) (map-nested unwrap $type) $type)
-         ($qtype $kb $prf $tv))
-      (goal-view-term $goal-view)))
-
-(= (goal-view-exact-hit? $goal-view $result)
-   (if (= $goal-view (proof-goal $kb $type $prf $tv))
-      (=? ($type $kb $prf $tv) $result)
-      (goal-key-eq? (goal-view-term $goal-view) $result)))
-
-(= (goal-view-is-aggregate? $goal-view)
-   (if (= $goal-view (cpu-goal $fun $_args $_res))
-      (is-member $fun (() FoldAllFormulaCompiled FoldAllTVFormulaCompiled))
-      false))
 
 (= (normalize-expected-tv $tv)
    (if (is-var $tv) (STV 1.0 1.0)
