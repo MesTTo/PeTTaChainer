@@ -111,15 +111,3 @@
             (fold-flat (|-> ($acc $waiter) (advance-frontier-waiter-heap $acc $waiter $pid))
                $agenda
                (collapse (match &goal_waiter ($gid $waiter) $waiter)))))))
-
-(= (commit-proof-candidate $gid $accepted (proof-candidate $kind $score $ev $children))
-   (if (== $accepted false) ()
-      (let $_
-         (commit-proof-candidate-heap (empty_heap)
-            $gid
-            $accepted
-            (proof-candidate $kind
-               $score
-               $ev
-               $children))
-         ())))

@@ -125,8 +125,6 @@
 
 (= (proof-term-children $prf) (proof-term-children-mode proof-walk-plain $prf))
 
-(= (proof-term-children-in-kb $_kb $prf) (proof-term-children-mode proof-walk-in-kb $prf))
-
 (= (proof-term-evidence-children-mode $mode ()) ())
 (= (proof-term-evidence-children-mode $mode (cons $child $rest))
    (append (proof-term-evidence-list-mode $mode $child)
@@ -145,11 +143,8 @@
 (= (proof-term-evidence-list $prf)
    (once (proof-term-evidence-list-mode proof-walk-plain $prf)))
 
-(= (proof-term-evidence-list-in-kb $_kb $prf)
-   (once (proof-term-evidence-list-mode proof-walk-in-kb $prf)))
-
 (= (proof-atom-evidence-set ($_type $kb $prf $_tv))
-   (list_to_set (proof-term-evidence-list-in-kb $kb $prf)))
+   (list_to_set (once (proof-term-evidence-list-mode proof-walk-in-kb $prf))))
 
 (= (evidence-sets-overlap? $set-a $set-b)
    (not (== (intersection-atom $set-a $set-b) ())))

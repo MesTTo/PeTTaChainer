@@ -37,8 +37,6 @@
             $gid)
          (car-atom $hits))))
 
-(= (ensure-goal $goal) (ensure-goal-at-depth $goal 0))
-
 (= (schedule-goal-heap $agenda $score $gid)
    (let*
       (($expanded (goal-expanded? $gid))
@@ -294,7 +292,7 @@
            (foreach-flat
               (|-> ($key) (change-state! $key 0))
               (() bwd_gid bwd_pid)))
-        ($root-gid (ensure-goal $goal))
+        ($root-gid (ensure-goal-at-depth $goal 0))
         ($agenda0 (schedule-goal-heap (empty_heap) 1.0 $root-gid))
         ((search-state $search-steps-left $agenda1)
            (once (if (<= $steps 0) (search-state 0 $agenda0) (search-goals-heap (+ $steps 1) $agenda0))))
