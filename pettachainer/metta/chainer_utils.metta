@@ -107,8 +107,6 @@
 
 (= (next-gid) (next-search-id bwd_gid))
 
-(= (next-aid) (next-search-id bwd_aid))
-
 (= (next-pid) (next-search-id bwd_pid))
 
 (= (cpu-call $steps $fun $args) (reduce (reduce (cons $fun $args))))

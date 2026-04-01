@@ -2,7 +2,7 @@
    (if (= $term ($type ($kbid $_ctx $_vars) $_prf $tv))
       ($type ($kbid $_ctx $_vars) (proof-ref $pid) $tv)
       $term))
-(= (proof-output-atom-kind (rule $_aid $term) $pid)
+(= (proof-output-atom-kind (rule $_rule-id $term) $pid)
    (if (= $term ($type ($kbid $_ctx $_vars) $_prf $tv))
       ($type ($kbid $_ctx $_vars) (proof-ref $pid) $tv)
       $term))
@@ -21,16 +21,11 @@
 (= (materialize-proof-kind (leaf $raw) $_pid)
    (if (= $raw (CPU $_fun $_args $_res)) cpu
       (if (= $raw ($_type ($_kbid $_ctx $_vars) $prf $_tv)) $prf $raw)))
-(= (materialize-proof-kind (rule $aid $_term) $pid)
-   (let*
-      (((and-bundle ($_type $_kb $prf $_tv) $_rest)
-           (instantiate-and-bundle
-              (copy_term (match &and_node ($aid $_parent $_rule $_bound $bundle) $bundle))
-              (match &proof_children ($pid $kids)
-                 $kids))))
-      (cons rule-proof
-         (cons (materialize-proof-refs (car-atom $prf))
-            (map-flat materialize-proof-refs (cdr-atom $prf))))))
+(= (materialize-proof-kind (rule $_rule-id ($_type $_kb $prf $_tv)) $_pid)
+   (cons rule-proof
+      (cons (materialize-proof-refs (car-atom $prf))
+         (map-flat materialize-proof-refs (cdr-atom $prf)))))
+(= (materialize-proof-kind (rule $_rule-id $term) $_pid) $term)
 
 (= (materialize-proof $pid) (materialize-proof-kind (proof-kind-by-id $pid) $pid))
 

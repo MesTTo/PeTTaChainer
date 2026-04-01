@@ -145,7 +145,7 @@
    (advance-waiter-state-heap $agenda
       $_wid
       (frontier-waiter $parent-gid
-         $aid
+         $rule-id
          $bundle
          $score
          $seen
@@ -159,7 +159,7 @@
          (if (== $next-bundle ()) $agenda
             (spawn-frontier-heap $agenda
                $parent-gid
-               $aid
+               $rule-id
                $next-bundle
                (min $score $pscore)
                (list_to_set (list-append $seen $pev))
@@ -255,20 +255,15 @@
            (fold-flat (expand-direct-goal-step $gid $goal) (expand-state $agenda false) $results)))
       (if $exact-hit $agenda1 (expand-rule-goal-heap $agenda1 $gid $goal))))
 
-(= (spawn-frontier-heap $agenda $parent-gid $aid $bundle $score $seen $rev-pids)
+(= (spawn-frontier-heap $agenda $parent-gid $rule-id $bundle $score $seen $rev-pids)
    (case $bundle (
         ((and-bundle $goal ())
            (let*
-              (($pid-list (list-reverse $rev-pids))
-                ((and-bundle $instantiated-goal $_rest)
-                   (instantiate-and-bundle
-                      (copy_term (match &and_node ($aid $_parent $_rule $_bound $node-bundle) $node-bundle))
-                      $pid-list))
-                (($_type ($_kbid $_ctx $_vars) $_prf $tv) $instantiated-goal))
+              (($pid-list (list-reverse $rev-pids)))
               (commit-proof-candidate-heap $agenda
                  $parent-gid
                  (classify-goal-proof-candidate $parent-gid $seen $score)
-                 (proof-candidate (rule $aid $instantiated-goal)
+                 (proof-candidate (rule $rule-id $goal)
                     $score
                     $seen
                     $pid-list))))
@@ -280,7 +275,7 @@
                  $score
                  $gid
                  (frontier-waiter $parent-gid
-                    $aid
+                    $rule-id
                     $stored-bundle
                     $score
                     $seen
@@ -297,12 +292,10 @@
 (= (expand-rule-goal-fold $agenda ($args $goal $parent-gid $rule-id))
    (let*
       (($bound (premises-expected-confidence $args))
-        ($bundle (copy_term (and-bundle $goal $args)))
-        ($aid (next-aid))
-        ($_1 (add-atom &and_node ($aid $parent-gid $rule-id $bound $bundle))))
+        ($bundle (copy_term (and-bundle $goal $args))))
       (spawn-frontier-heap $agenda
          $parent-gid
-         $aid
+         $rule-id
          $bundle
          $bound
          ()
@@ -334,10 +327,6 @@
                (search-goals-heap (- $steps 1) $nagenda))
             (search-goals-heap $steps $rest)))))
 
-(= (instantiate-and-bundle (and-bundle $goal ()) ()) (and-bundle $goal ()))
-(= (instantiate-and-bundle (and-bundle $goal (cons $prem $rest)) (cons $pid $pids))
-   (if (= $prem (proof-output-atom $pid)) (instantiate-and-bundle (and-bundle $goal $rest) $pids) (empty)))
-
 (= (clear-backward-state)
    (progn
       (foreach-flat remove-all-atoms
@@ -347,7 +336,6 @@
             &goal_pending_score
             &goal_waiter
             &waiter_state
-            &and_node
             &goal_proof
             &proof_goal
             &proof_stats
@@ -361,7 +349,7 @@
         ($_reset
            (foreach-flat
               (|-> ($key) (change-state! $key 0))
-              (() bwd_gid bwd_aid bwd_wid bwd_pid)))
+              (() bwd_gid bwd_wid bwd_pid)))
         ($root-gid (ensure-goal $goal))
         ($agenda0 (schedule-goal-heap (empty_heap) 1.0 $root-gid))
         ((search-state $search-steps-left $agenda1)
