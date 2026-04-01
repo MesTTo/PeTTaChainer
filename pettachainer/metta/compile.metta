@@ -301,9 +301,9 @@
 (= (mm2compileQuery $kb $stmt)
    (let $compiled (compileQuery $kb $stmt)
       (if (= $compiled (((() |- ($ccl)) $adds)))
-         (let*
-            (($tail (map-flat mm2stmt $adds)))
-            (compiled-query $ccl $tail))
+         (compiled-query
+            (internalize-proof-structure $ccl)
+            (internalize-proof-structure-list (map-flat mm2stmt $adds)))
          (if
             (= $compiled
                ((((: ($kbid $_ctx $_vars) $prf $type $tv)) |-
@@ -314,10 +314,11 @@
                  ($mvars (if (== $vars ()) Nil $vars))
                  ($ctx (nextctx))
                  ($ctxatom (: ($kbid $ctx $mvars) (ctx proof $ctx) $type $tv))
-                 ($tail (map-flat mm2stmt $adds))
                  ($goal (: ($kbid $ctx $mvars) $prf1 $type1 $tv1))
-                 ($all-adds (union-atom ($ctxatom) $tail)))
-               (compiled-query $goal $all-adds))
+                 ($all-adds (union-atom ($ctxatom) (map-flat mm2stmt $adds))))
+               (compiled-query
+                  (internalize-proof-structure $goal)
+                  (internalize-proof-structure-list $all-adds)))
             (notsupported mm2compileQuery $kb $stmt $compiled)))))
 
 (= (mf $kb ($kb $t)) $t)
@@ -344,13 +345,6 @@
 
 (= (externalize-proof-structure-list $terms)
    (if (== $terms ()) () (map-flat externalize-proof-structure $terms)))
-
-(= (mm2compileQueryInternal $kb $stmt)
-   (let*
-      (((compiled-query $raw-goal $raw-adds) (car-atom (collapse (mm2compileQuery $kb $stmt)))))
-      (compiled-query
-         (internalize-proof-structure $raw-goal)
-         (internalize-proof-structure-list $raw-adds))))
 
 (= (pretty-prf-token $prf)
    (if (= $prf (mined_implication $premk $conck))

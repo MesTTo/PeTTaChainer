@@ -42,7 +42,7 @@
 
 (= (query $steps $kb $stmt)
    (let*
-      (((compiled-query $goal $adds) (mm2compileQueryInternal $kb $stmt))
+      (((compiled-query $goal $adds) (mm2compileQuery $kb $stmt))
         ($_clear-temp-before (clear-temp-query-adds))
         ($_ (inject-compiled-adds $adds))
         ($results (chainer $steps $goal))

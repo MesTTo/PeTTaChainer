@@ -32,7 +32,7 @@
    (aggregate-child-goal
       (CPU FoldAllCompiled ($kb $pattern $_extractor $_init $_fun $_finish $_tv-mode) $_goalres))
    (let*
-      (((compiled-query $child-goal $adds) (mm2compileQueryInternal $kb (: $prf $pattern $tvin)))
+      (((compiled-query $child-goal $adds) (mm2compileQuery $kb (: $prf $pattern $tvin)))
         ($_ (inject-compiled-adds $adds)))
       $child-goal))
 
