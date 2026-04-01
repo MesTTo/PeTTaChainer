@@ -27,7 +27,9 @@
          (map-flat materialize-proof-refs (cdr-atom $prf)))))
 (= (materialize-proof-kind (rule $_rule-id $term) $_pid) $term)
 
-(= (materialize-proof $pid) (materialize-proof-kind (proof-kind-by-id $pid) $pid))
+(= (materialize-proof $pid)
+   (match &proof ($pid $_gid $_output $kind $_score $_ev $_children)
+      (materialize-proof-kind $kind $pid)))
 
 (= (goal-results $gid)
    (let $pids (collapse (match &proof ($pid $gid $_output $_kind $_score $_ev $_children) $pid))

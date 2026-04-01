@@ -108,12 +108,6 @@
 
 (= (proof-stats-by-id $pid) (match &proof ($pid $_gid $_output $_kind $score $ev $_children) ($score $ev)))
 
-(= (proof-tv-by-id $pid)
-   (let $atom (proof-output-atom $pid)
-      (if (= $atom ($_type $_kb $_prf $tv)) $tv no-tv)))
-
-(= (proof-kind-by-id $pid) (match &proof ($pid $_gid $_output $kind $_score $_ev $_children) $kind))
-
 (= (proof-tree-contains-list () $needle) false)
 (= (proof-tree-contains-list (cons $head $tail) $needle)
    (or (proof-tree-contains $head $needle) (proof-tree-contains-list $tail $needle)))

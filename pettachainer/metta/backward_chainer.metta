@@ -147,10 +147,11 @@
       (($child-atom (proof-output-atom $pid))
         ($child-key (aggregate-proof-key $child-atom))
         (($_pscore $pev) (proof-stats-by-id $pid))
+        ($child-tv (if (= $child-atom ($_type $_kb $_prf $tv)) $tv no-tv))
         ($step-spec (copy_term (aggregate-spec-step $spec))))
       (if (is-member $child-key $seen) (aggregate-state $acc $ev $seen)
          (let*
-            (($nacc (aggregate-spec-step-acc $step-spec $acc $child-atom (proof-tv-by-id $pid)))
+            (($nacc (aggregate-spec-step-acc $step-spec $acc $child-atom $child-tv))
               ($nev (list_to_set (list-append $ev $pev)))
               ($nseen (cons $child-key $seen)))
             (aggregate-state $nacc $nev $nseen)))))
