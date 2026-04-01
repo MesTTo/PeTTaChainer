@@ -105,15 +105,34 @@
        ($exec-types (map-flat exec-goal-type $execs))
        ($proof-token (if (= $rcclprf (cons $proof ())) $proof (cons conjunction $rcclprf))))
       (premise-bundle $exec-types $execs $ccltv $proof-token)))
-(= (compile-inputs (: $kb $prf (cons $head $tail) $tv))
+(= (adapter-proof plain $_prf $proof-token) $proof-token)
+(= (adapter-proof query $prf $proof-token) ($prf $proof-token))
+(= (compound-source? (cons $head $_tail))
+   (and (not (is-var $head)) (is-member $head (And Or LikelierThan))))
+(= (compound-source? $_type) false)
+(= (compile-adapter-chain plain (: $kb $prf (cons $head $tail) $tv))
    (if (and (not (is-var $head)) (is-member $head (And Or LikelierThan)))
       (let*
-         (((premise-bundle $exec-types $execs $result-tv $proof-token)
-              (compound-premise-bundle $kb $ctx $vars $head $tail)))
+((
+            (premise-bundle $exec-types $execs $result-tv $proof-token)
+            (compound-premise-bundle $kb $ctx $vars $head $tail)))
          (superpose
             (($execs |- ((: $kb $proof-token (cons $head $tail) $result-tv)))
-             (compile-inputs (: $kb $prfa (seq2expr $exec-types) $atv)))))
+             (if (== (seq2expr $exec-types) (cons $head $tail)) (empty)
+                (compile-adapter-chain plain (: $kb $prfa (seq2expr $exec-types) $atv))))))
       (empty)))
+(= (compile-adapter-chain plain (: $_kb $_prf $_type $_tv)) (empty))
+(= (compile-adapter-chain query (: $kb $prf $type $tv))
+   (if (compound-source? $type) (compile-adapter-chain plain (: $kb $prf $type $tv))
+      (let*
+         (((premise-bundle $exec-types $execs $result-tv $proof-token)
+              (once (lower-source-premise $kb $ctx $vars $type)))
+           ($exec-type (seq2expr $exec-types)))
+         (if (and (not (is-var $type)) (not (== $exec-type $type)))
+            (superpose
+               (($execs |- ((: $kb ($prf $proof-token) $type $result-tv)))
+                (compile-adapter-chain plain (: $kb $prfa $exec-type $atv))))
+            (empty)))))
 (= (lower-source-premise $kb $ctx $vars $premise)
    (if (and (= $premise (cons $head $tail))
          (not (is-var $head))
@@ -222,20 +241,11 @@
        ($na (skolemize $prf $b $a))
        ($skip-inverse (or (disable-inversion-proof-id? $prf) (contains-cpu? $a))))
       (compiled-implication $shape-kb $a $b $nb $na $skip-inverse $execs $proofs $atv)))
-(= (compile-query-adds (: $kb $prf (cons $head $tail) $tv))
-   (if (and (not (is-var $head)) (is-member $head (And Or LikelierThan)))
-      (collapse (compile-inputs (: $kb $prf (cons $head $tail) $tv))) ()))
 (= (compile-query-adds (: $kb $prf $type $tv))
-   (let*
-      (((premise-bundle $exec-types $execs $result-tv $proof-token)
-           (once (lower-source-premise $kb $ctx $vars $type)))
-        ($exec-type (seq2expr $exec-types)))
-      (if (and (not (is-var $type)) (not (== $exec-type $type)))
-         (collapse
-            (superpose
-               (($execs |- ((: $kb ($prf $proof-token) $type $result-tv)))
-                (compile-inputs (: $kb $prfa $exec-type $atv)))))
-         ())))
+   (collapse
+      (compile-adapter-chain
+         (if (compound-source? $type) plain query)
+         (: $kb $prf $type $tv))))
 (= (compile $kb $stmt) (compile_ $kb $stmt))
 (= (kbctx $kb) (if (is-expr $kb) $kb ($kb MAIN Nil)))
 (= (map-nested2 $f ()) ())
@@ -292,7 +302,7 @@
                 (if (is-var $nb) (empty)
                    (compile-outputs (: (kbctx $kb) ($prf $prfa) $nb $btv)))
                 (if (is-var $a) (empty)
-                   (compile-inputs (: (kbctx $kb) $prfa $a $atv)))
+                   (compile-adapter-chain plain (: (kbctx $kb) $prfa $a $atv)))
                 (if (not $skip-inverse)
                    (inverse-implication $kb $prf $na $b $tv)
                    (empty))
@@ -300,7 +310,7 @@
                    (compile-outputs
                       (: ((inverted $prf $pa $pb1) $pb2) $na $natv)))
                 (if (or $skip-inverse (is-var $b)) (empty)
-                   (compile-inputs (: $pb2 $b $btv2))))))
+                   (compile-adapter-chain plain (: $pb2 $b $btv2))))))
          (superpose
             ((() |- ((: ($kb MAIN Nil) $prf $Type $tv)))
              (compile-outputs (: ($kb MAIN Nil) $prf $Type $tv)))))))
@@ -315,7 +325,7 @@
             ((((: $shape-kb $prfa $a (STV 1.0 1.0))) |- ((: $shape-kb $prfb $b $itv)))
                (collapse
                   (superpose
-                     ((compile-inputs (: $shape-kb $prfb $b $btv))
+                     ((compile-adapter-chain plain (: $shape-kb $prfb $b $btv))
                       (compile-outputs (: $shape-kb $prfa $a $atv)))))))
          (((() |- ((: (kbctx $kb) $prf $Type $tv)))
             (compile-query-adds (: (kbctx $kb) $prf $Type $tv)))))))
