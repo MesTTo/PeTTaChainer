@@ -24,8 +24,6 @@
          (remove-atom &goal ($gid $depth $goal $expanded $old-pending))
          (add-atom &goal ($gid $depth $goal $expanded $pending)))))
 
-(= (clear-goal-pending-score $gid) (set-goal-pending-score $gid 0.0))
-
 (= (ensure-goal-at-depth $goal $depth)
    (let*
       (($stored-goal (copy_term $goal))
@@ -87,8 +85,6 @@
       (eval ($fun $acc $val))))
 (= (aggregate-spec-step-acc (aggregate-step-fold-tv $fun) $acc $_child-atom $child-tv)
    (eval ($fun $acc $child-tv)))
-(= (aggregate-spec-step-acc aggregate-step-dist-average $acc $_child-atom $child-tv)
-   (reduce (reduce (DistSumCountAcc $acc $child-tv))))
 
 (= (aggregate-spec-result (aggregate-result-bare $fun $args identity) $acc)
    (CPU $fun $args $acc))
@@ -111,17 +107,14 @@
                $rule-id
                $next-bundle
                (min $score $pscore)
-               (list_to_set (list-append $seen $pev))
+               (list_to_set (append $seen $pev))
                (cons $pid $rev-pids))))))
-
-(= (advance-goal-waiter-heap $agenda $waiter $pid)
-   (advance-frontier-waiter-heap $agenda $waiter $pid))
 
 (= (spawn-frontier-goal-heap $agenda $score $gid $waiter)
    (let*
       (($_1 (add-atom &goal_waiter ($gid $waiter)))
         ($agenda1
-           (fold-flat (|-> ($acc $pid) (advance-goal-waiter-heap $acc $waiter $pid))
+           (fold-flat (|-> ($acc $pid) (advance-frontier-waiter-heap $acc $waiter $pid))
               $agenda
               (collapse (match &proof ($pid $gid $_output $_kind $_score $_ev $_children) $pid))))
         ($nagenda (schedule-goal-heap $agenda1 $score $gid)))
@@ -152,7 +145,7 @@
       (if (is-member $child-key $seen) (aggregate-state $acc $ev $seen)
          (let*
             (($nacc (aggregate-spec-step-acc $step-spec $acc $child-atom $child-tv))
-              ($nev (list_to_set (list-append $ev $pev)))
+              ($nev (list_to_set (append $ev $pev)))
               ($nseen (cons $child-key $seen)))
             (aggregate-state $nacc $nev $nseen)))))
 
@@ -224,7 +217,7 @@
    (case $bundle (
         ((and-bundle $goal ())
            (let*
-              (($pid-list (list-reverse $rev-pids)))
+              (($pid-list (reverse $rev-pids)))
               (commit-proof-candidate-heap $agenda
                  $parent-gid
                  (classify-goal-proof-candidate $parent-gid $seen $score)
@@ -287,7 +280,7 @@
            ((qitem $score $gid) $item))
          (if (and (not (goal-expanded? $gid)) (== (goal-pending-score-of $gid) $score))
             (let*
-               (($_clear (clear-goal-pending-score $gid))
+               (($_clear (set-goal-pending-score $gid 0.0))
                  ($nagenda (expand-goal-heap $rest $steps $score $gid)))
                (search-goals-heap (- $steps 1) $nagenda))
             (search-goals-heap $steps $rest)))))

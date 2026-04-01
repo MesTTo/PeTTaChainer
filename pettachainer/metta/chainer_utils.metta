@@ -68,17 +68,8 @@
       (if (and (= $tv1 (STV $_m1 $_c1)) (= $tv2 (STV $_m2 $_c2))) (mergetvs $tv1 $tv2)
          $tv1)))
 
-(= (list-append () $ys) $ys)
-(= (list-append (cons $x $xs) $ys) (cons $x (list-append $xs $ys)))
-
 (= (foreach-flat $f ()) ())
 (= (foreach-flat $f (cons $x $xs)) (progn ($f $x) (foreach-flat $f $xs)))
-
-(= (list-reverse-acc () $acc) $acc)
-(= (list-reverse-acc (cons $head $tail) $acc)
-   (list-reverse-acc $tail (cons $head $acc)))
-
-(= (list-reverse $xs) (list-reverse-acc $xs ()))
 
 (= (contains-hash? $x) (fold-nested (|-> ($acc $elem) (or (== $elem #) $acc)) false $x))
 
@@ -137,18 +128,18 @@
 
 (= (proof-term-children $prf) (proof-term-children-mode proof-walk-plain $prf))
 
-(= (proof-term-children-in-kb $kb $prf) (proof-term-children-mode proof-walk-in-kb $prf))
+(= (proof-term-children-in-kb $_kb $prf) (proof-term-children-mode proof-walk-in-kb $prf))
 
 (= (proof-term-evidence-children-mode $mode ()) ())
 (= (proof-term-evidence-children-mode $mode (cons $child $rest))
-   (list-append (proof-term-evidence-list-mode $mode $child)
+   (append (proof-term-evidence-list-mode $mode $child)
       (proof-term-evidence-children-mode $mode $rest)))
 
 (= (proof-term-evidence-list-mode $mode $prf)
-   (if (= $prf (proof-ref $pid)) (snd (proof-stats-by-id $pid))
+      (if (= $prf (proof-ref $pid)) (snd (proof-stats-by-id $pid))
       (if (is-var $prf) ()
          (if (= $prf (merge/revision $left $right))
-            (list-append (proof-term-evidence-list-mode $mode $left)
+            (append (proof-term-evidence-list-mode $mode $left)
                (proof-term-evidence-list-mode $mode $right))
             (let $children (proof-term-children-mode $mode $prf)
                (if (== $children ()) (cons $prf ())
@@ -157,7 +148,7 @@
 (= (proof-term-evidence-list $prf)
    (once (proof-term-evidence-list-mode proof-walk-plain $prf)))
 
-(= (proof-term-evidence-list-in-kb $kb $prf)
+(= (proof-term-evidence-list-in-kb $_kb $prf)
    (once (proof-term-evidence-list-mode proof-walk-in-kb $prf)))
 
 (= (proof-atom-evidence-set ($_type $kb $prf $_tv))
