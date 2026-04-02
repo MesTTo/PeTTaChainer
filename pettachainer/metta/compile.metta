@@ -34,7 +34,7 @@
 (= (seq2expr (cons $head $tail)) (if (== $tail ()) $head (cons And (cons $head $tail))))
 
 (= (compile-outputs (: $kb $NNprf (@ $type (cons $head $tail)) $NNtv))
-   (if (and (not (is-var $head)) (is-member $head (And Or LikelierThan)))
+   (if (compound-source? $type)
       (let $to-proj
          (|-> (($elem $idx))
             (((: $kb $prf $type $tvin)
@@ -54,9 +54,8 @@
          DistGreaterThanDistFormula
          DistMapFormula
          DistMap2Formula)))
-(= (cpu-premise-tv FoldAllCompiled ($_kb $_pattern $_extractor $_init $_fun $_finish result-tv) $res) $res)
-(= (cpu-premise-tv FoldAllCompiled ($_kb $_pattern $_extractor $_init $_fun $_finish unit-stv) $_res)
-   (STV 1.0 1.0))
+(= (cpu-premise-tv FoldAllCompiled ($_kb $_pattern $_extractor $_init $_fun $_finish $tv-mode) $res)
+   (if (== $tv-mode result-tv) $res (STV 1.0 1.0)))
 (= (cpu-premise-tv $f $args $res) (if (cpu-premise-tv-formula $f) $res (STV 1.0 1.0)))
 (= (in_map $kb $elem)
    (if (= $elem (CPU $f $args $res))
@@ -112,10 +111,9 @@
                 (compile-adapter-chain plain (: $kb $prfa $exec-type $atv))))
             (empty)))))
 (= (lower-source-premise $kb $ctx $vars $premise)
-   (if (and (= $premise (cons $head $tail))
-         (not (is-var $head))
-         (is-member $head (And Or LikelierThan)))
-      (compound-premise-bundle $kb $ctx $vars $head $tail)
+   (if (compound-source? $premise)
+      (let (cons $head $tail) $premise
+         (compound-premise-bundle $kb $ctx $vars $head $tail))
       (case $premise (
         ((Compute $f $args -> $res)
            (bundle-from-execs
