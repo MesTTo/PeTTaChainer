@@ -71,15 +71,15 @@
                (list_to_set (append $seen $pev))
                (cons $pid $rev-pids))))))
 
-(= (advance-goal-waiter-heap $agenda (@ $waiter (head frontier-waiter)) $pid)
-   (advance-frontier-waiter-heap $agenda $waiter $pid))
-(= (advance-goal-waiter-heap $agenda (head aggregate-waiter) $_pid) $agenda)
+(= (frontier-waiter-step (@ $waiter (head frontier-waiter)) $rest)
+   (cons $waiter $rest))
+(= (frontier-waiter-step $_waiter $rest) $rest)
 
 (= (spawn-frontier-goal-heap $agenda $score $gid $waiter)
    (let*
       (($_1 (add-atom &goal_waiter ($gid $waiter)))
         ($agenda1
-           (fold-flat (|-> ($acc $pid) (advance-goal-waiter-heap $acc $waiter $pid))
+           (fold-flat (|-> ($acc $pid) (advance-frontier-waiter-heap $acc $waiter $pid))
               $agenda
               (collapse (match &proof ($pid $gid $_output $_kind $_score $_ev $_children) $pid))))
         ($nagenda (schedule-goal-heap $agenda1 $score $gid)))
