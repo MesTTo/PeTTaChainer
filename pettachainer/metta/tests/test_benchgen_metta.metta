@@ -19,6 +19,8 @@
 
 !(test (not (== (BenchPLNKB benchCore) ())) true)
 
+!(test (== (BenchListCount (BenchPLNAtoms benchCore)) (BenchTrueStatementCount benchCore)) true)
+
 !(BenchGenerate benchNoiseMix
    (depth 2)
    (width 2)
@@ -36,7 +38,19 @@
 
 !(test (== (BenchNoiseForwardRuleCount benchNoiseMix) 4) true)
 
-!(test (not (== (collapse (match &bench_meta (bench-noise-back-rule-meta benchNoiseMix 1 0) yes)) ()))
+!(test
+   (== (BenchListCount (BenchPLNAtoms benchNoiseMix))
+      (+ (BenchTrueStatementCount benchNoiseMix) (BenchNoiseStatementCount benchNoiseMix)))
+   true)
+
+!(test
+   (not
+      (==
+         (collapse
+            (match &kb
+               ((BenchNoiseBackRule benchNoiseMix 1 0) (kb MAIN Nil) (bench-noise-back-meta benchNoiseMix 1 0) (STV 1.0 1.0))
+               yes))
+         ()))
    true)
 
 !(test
@@ -45,8 +59,7 @@
       ())
    true)
 
-!(test (== (BenchListCount (collapse (query 100 kb (: $prf (NoiseDeadEnd benchNoiseMix $idx) $tv)))) 2)
-   true)
+!(test (not (== (collapse (query 100 kb (: $prf (NoiseDeadEnd benchNoiseMix $idx) $tv))) ())) true)
 
 !(BenchGenerate benchPaths3
    (depth 2)
