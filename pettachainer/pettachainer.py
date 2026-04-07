@@ -1,14 +1,20 @@
 import logging
 import multiprocessing as mp
 from pathlib import Path
+import sys
 import threading
 import traceback
 import uuid
 from typing import List, Optional
+import __main__
 
 from petta import PeTTa
 
-from .pln_validator import check_query, check_stmt
+if __package__:
+    from .pln_validator import check_query, check_stmt
+else:  # Allow direct script execution: python pettachainer/pettachainer.py
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from pettachainer.pln_validator import check_query, check_stmt
 
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -24,9 +30,13 @@ def get_language_spec(llm_focused: bool = True) -> str:
     return (Path(__file__).resolve().parent / ("LLM_RULE_SPEC.md" if llm_focused else "LANGUAGE_SPEC.md")).read_text(encoding="utf-8")
 
 
-def _query_worker(handler: PeTTa, kb: str, steps: int, atom: str, conn):
+def _query_worker(added_atoms: List[str], kb: str, steps: int, atom: str, conn):
     try:
-        atoms = handler.process_metta_string(f"!(query {steps} {kb} {atom})")
+        handler = PeTTaChainer()
+        handler.kb = kb
+        if added_atoms:
+            handler.add_atoms_no_check(added_atoms)
+        atoms = handler.handler.process_metta_string(f"!(query {steps} {kb} {atom})")
         conn.send(("ok", atoms))
     except Exception as exc:  # pragma: no cover
         conn.send(("err", (exc.__class__.__name__, str(exc), traceback.format_exc())))
@@ -43,6 +53,7 @@ class PeTTaChainer:
         global LOADEDLIB
         self.handler = PeTTa()
         self.kb = f"kb{uuid.uuid4().hex}"
+        self._added_atoms: List[str] = []
         base_dir = Path(__file__).resolve().parent
 
         if LOADEDLIB:
@@ -73,13 +84,17 @@ class PeTTaChainer:
     def add_atom(self, atom: str) -> str:
         evaluated_atom = self._evaluate(atom)
         self._validate("statement", atom, evaluated_atom, check_stmt)
-        return self.handler.process_metta_string(f"!(compileadd {self.kb} {evaluated_atom})")
+        result = self.handler.process_metta_string(f"!(compileadd {self.kb} {evaluated_atom})")
+        self._added_atoms.append(evaluated_atom)
+        return result
 
     def add_atoms_no_check(self, atoms: List[str]) -> str:
         adds = [f"(compileadd {self.kb} {atom})" for atom in atoms]
-        return self.handler.process_metta_string(
+        result = self.handler.process_metta_string(
             f"!(superpose ({' '.join(adds)}))"
         )
+        self._added_atoms.extend(atoms)
+        return result
 
     evaluate_statement = _evaluate
     evaluate_query = _evaluate
@@ -97,12 +112,22 @@ class PeTTaChainer:
                 self.handler.process_metta_string(f"!(query {steps} {self.kb} {evaluated_query})")
             )
 
-        # Use a forked process so timeout can actually stop CPU-bound query work.
-        ctx = mp.get_context("fork")
+        main_file = getattr(__main__, "__file__", None)
+        if not main_file or main_file == "<stdin>":
+            logger.warning(
+                "Multiprocessing query timeout is unavailable from %s; running query without a timeout",
+                main_file or "interactive __main__",
+            )
+            return _as_list(
+                self.handler.process_metta_string(f"!(query {steps} {self.kb} {evaluated_query})")
+            )
+
+        # Use a fresh spawned process so we don't inherit a live SWI/Janus runtime.
+        ctx = mp.get_context("spawn")
         parent_conn, child_conn = ctx.Pipe(duplex=False)
         worker = ctx.Process(
             target=_query_worker,
-            args=(self.handler, self.kb, steps, evaluated_query, child_conn),
+            args=(self._added_atoms, self.kb, steps, evaluated_query, child_conn),
             daemon=True,
         )
         worker.start()
@@ -131,12 +156,8 @@ class PeTTaChainer:
 
 if __name__ == "__main__":
     handler = PeTTaChainer()
-    for atom in (
-        "(: fact_a (Count A 1) (STV 1.0 1.0))",
-        "(: fact_b (Count B 2) (STV 1.0 1.0))",
-        "(: sum_rule (Implication (Premises (Count A $a) (Count B $b) (Compute + ($a $b) -> $c)) (Conclusions (Count C $c))) (STV 1.0 1.0))",
-    ):
-        print(f"Adding {atom}")
-        print(handler.add_atom(atom))
+    atom = "(: fact_a (Count A 1) (STV 1.0 1.0))"
+    print(f"Adding {atom}")
+    print(handler.add_atom(atom))
     print("Query result:")
-    print(handler.query("(: $prf (Count C $c) $tv)"))
+    print(handler.query("(: $prf (Count A 1) $tv)", timeout_sec=0))
