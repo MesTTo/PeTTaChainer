@@ -4,6 +4,10 @@
 !(use-module! heaps)
 
 !(import_prolog_function (superpose (empty_heap add_to_heap get_from_heap heap_size)))
+!(assertzPredicate (Predicate (arity empty_heap 1)))
+!(assertzPredicate (Predicate (arity add_to_heap 4)))
+!(assertzPredicate (Predicate (arity get_from_heap 4)))
+!(assertzPredicate (Predicate (arity heap_size 2)))
 
 !(import! &self chainer_utils)
 !(import! &self forward_chainer)
@@ -29,7 +33,7 @@
         ($atoms (collapse (mm2compile $kb $stmt1)))
         ($iatoms (map-flat internalize-proof-structure $atoms))
         ($eatoms (map-flat externalize-proof-structure $iatoms))
-        ($_ (foreach-flat add-to-kb $iatoms))
-        ($_ (process-on-add $kb $stmt1)))
+        ($_ (foreach-flat add-to-kb $iatoms)))
+        ;($_ (process-on-add $kb $stmt1)))
       (superpose
          $eatoms)))

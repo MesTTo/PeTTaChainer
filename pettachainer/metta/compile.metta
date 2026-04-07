@@ -30,16 +30,17 @@
 
 (= (seq2expr (cons $head $tail)) (if (== $tail ()) $head (cons And (cons $head $tail))))
 
+(= (compile-output-children $kb $type $head $idx ()) (empty))
+(= (compile-output-children $kb $type $head $idx (cons $elem $rest))
+   (superpose (
+      (((: $kb $prf $type $tvin) (CPU (atom_concat $head Projection) ($tvin) $tvout)) |-
+         ((: $kb (proj $idx $prf) $elem $tvout)))
+      (compile-outputs (: $kb $childprf $elem $childtv))
+      (compile-output-children $kb $type $head (+ $idx 1) $rest))))
+
 (= (compile-outputs (: $kb $NNprf (@ $type (cons $head $tail)) $NNtv))
    (if (compound-source? $type)
-      (let $to-proj
-         (|-> (($elem $idx))
-            (((: $kb $prf $type $tvin) (CPU (atom_concat $head Projection) ($tvin) $tvout)) |-
-               ((: $kb (proj $idx $prf) $elem $tvout))))
-         (let*
-            (($cmp-out (|-> (($elem $_)) (compile-outputs (: $kb $prfn $elem $tvn)))
-                 ($idtail (addidx $tail 0)))
-              (&^& $to-proj $cmp-out (superpose $idtail)))))
+      (compile-output-children $kb $type $head 0 $tail)
       (empty)))
 
 (= (cpu-premise-tv-formula $f)
