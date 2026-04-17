@@ -9,7 +9,7 @@
 
 !(test (collapse (query 20 openQueryKb (: $prf (Animal $a) $tv)))
    ((: (rule-proof (no_inverse dog_to_animal) d1) (Animal max) (STV 1.0 0.9))
-      (: (rule-proof (no_inverse dog_to_animal) d2) (Animal ann) (STV 1.0 0.9))))
+    (: (rule-proof (no_inverse dog_to_animal) d2) (Animal ann) (STV 1.0 0.9))))
 
 !(compileadd openAndFairKb (: haveMax (Have (i max)) (STV 1.0 1.0)))
 
@@ -56,8 +56,28 @@
    (: distractRule6 (Implication (Premises (Distract6 $x)) (Conclusions (Pet $x))) (STV 1.0 1.0)))
 
 !(test
-   (let (: $prf (And (Own (i ann)) (Pet ann)) $tv)
-      (superpose (collapse
-                  (query 20 openAndFairKb (: $prf (And (Own (i $a)) (Pet $a)) $tv))))
-      true)
-   true)
+   (collapse (query 20 openAndFairKb (: $prf (And (Own (i $a)) (Pet $a)) $tv)))
+   ((: (rule-proof conjunction (rule-proof ownRule haveMax) (rule-proof distractRule6 distract6))
+       (And (Own (i max)) (Pet max))
+       (STV 0.8 0.9))
+      (: (rule-proof conjunction (rule-proof ownRule haveMax) (rule-proof distractRule5 distract5))
+         (And (Own (i max)) (Pet max))
+         (STV 0.8 0.9))
+      (: (rule-proof conjunction (rule-proof ownRule haveMax) (rule-proof distractRule4 distract4))
+         (And (Own (i max)) (Pet max))
+         (STV 0.8 0.9))
+      (: (rule-proof conjunction (rule-proof ownRule haveMax) (rule-proof distractRule3 distract3))
+         (And (Own (i max)) (Pet max))
+         (STV 0.8 0.9))
+      (: (rule-proof conjunction (rule-proof ownRule haveMax) (rule-proof distractRule2 distract2))
+         (And (Own (i max)) (Pet max))
+         (STV 0.8 0.9))
+      (: (rule-proof conjunction (rule-proof ownRule haveMax) (rule-proof distractRule1 distract1))
+         (And (Own (i max)) (Pet max))
+         (STV 0.8 0.9))
+      (: (rule-proof conjunction (rule-proof ownRule haveMax) (rule-proof petRule dogMax))
+         (And (Own (i max)) (Pet max))
+         (STV 0.7 0.9))
+      (: (rule-proof conjunction (rule-proof ownRule haveAnn) (rule-proof petRule dogAnn))
+         (And (Own (i ann)) (Pet ann))
+         (STV 0.7 0.9))))

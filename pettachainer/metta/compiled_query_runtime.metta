@@ -22,10 +22,11 @@
            ($_1 (fold-flat (kb-add-prem $backend $id) 0 $args))
            ($_2 (kb-add-atom $backend ccls_index ($ccls $id)))
            ($_3 (kb-add-atom $backend rules ($id $ccls $args)))
-           ($_4 (if (== $backend live) (forward-register-added-rule $args $ccls) ())))
+           ($_4 (if (== $backend live) (mark-forward-agenda-dirty $ccls) ())))
          ())
-      (progn (kb-add-atom $backend &kb $expr)
-         (if (== $backend live) (forward-register-added-expr $expr) ()))))
+      (progn
+         (kb-add-atom $backend &kb $expr)
+         (if (== $backend live) (mark-forward-agenda-dirty $expr) ()))))
 
 (= (clear-temp-query-adds)
    (progn

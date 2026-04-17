@@ -156,7 +156,8 @@
          (commit-aggregate-snapshot-heap $agenda $agg-gid $result $ev)
          $agenda)))
 
-(= (direct-goal-results-view $steps (CPU $fun $args $_res)) (CPU $fun $args (cpu-call $steps $fun $args)))
+(= (direct-goal-results-view $steps (CPU $fun $args $_res))
+   (CPU $fun $args (reduce (cpu-call $steps $fun $args))))
 (= (direct-goal-results-view $steps ($type $kb $prf $tv))
    (let $qtype (if (contains-hash? $type) (map-nested (|-> ($x) (if (== $x #) $any $x)) $type) $type)
       (match &kb ($qtype $kb $prf $tv)
@@ -258,8 +259,8 @@
 
 (= (chainer $steps $goal)
    (let*
-      (($_clear (foreach-flat remove-all-atoms (&goal &goal_lookup &goal_waiter &aggregate &proof)))
-       ($_reset (foreach-flat (|-> ($key) (change-state! $key 0)) (bwd_gid bwd_pid)))
+      (($_clear (foreach-flat remove-all-atoms (&goal &goal_lookup &goal_waiter &aggregate &proof &proof_live_cache &goal_live_cache)))
+       ($_reset (foreach-flat (|-> ($key) (change-state! $key 0)) (bwd_gid bwd_pid bwd_live_epoch)))
        ($root-gid (ensure-goal-at-depth $goal 0))
        ($agenda0 (schedule-goal-heap (empty_heap) 1.0 $root-gid))
        ((search-state $_steps-left $_agenda1)
