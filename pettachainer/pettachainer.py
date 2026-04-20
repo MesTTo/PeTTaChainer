@@ -103,6 +103,14 @@ class PeTTaChainer:
         for atom in _as_list(self.handler.process_metta_string(f"!(match &kb $a (pretty $a))")):
             print(atom)
 
+    def forward_chain(self, steps: int = 100, term: Optional[str] = None):
+        if term is None:
+            return self.handler.process_metta_string(f"!(forward-chain {steps} {self.kb})")
+        evaluated_term = self._evaluate(term)
+        return self.handler.process_metta_string(
+            f"!(forward-chain-from {steps} {self.kb} {evaluated_term})"
+        )
+
     def query(self, atom: str, steps: int = 100, timeout_sec: Optional[float] = 10) -> List[str]:
         evaluated_query = self._evaluate(atom)
         self._validate("query", atom, evaluated_query, check_query)
