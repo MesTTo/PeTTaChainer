@@ -196,6 +196,10 @@
 
 (= (DistAverageFromSumCount (SumCount $sumdist $count)) (DistMapFormula (|-> ($x) (/ $x $count)) $sumdist))
 
+(= (DistValueCountAcc (PairCounts $pairs) $x) (PairCounts (dist-add-mass $pairs $x 1.0)))
+
+(= (PairCountsToDist (PairCounts $pairs)) (ParticleFromPairs $pairs))
+
 (= (ParticleAddBernoulliFromSTV $pd $tv)
    (let*
       (($pid (particle-dist-id $pd))

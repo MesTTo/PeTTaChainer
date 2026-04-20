@@ -7,6 +7,12 @@
 
 (= (proof-output-atom $pid) (match &proof ($pid $_gid $output $_kind $_score $_ev $_children) $output))
 
+(= (candidate-output-key ($type $kb $_prf $_tv)) ($type $kb))
+(= (candidate-output-key $term) $term)
+
+(= (proof-output-key-by-id $pid)
+   (candidate-output-key (proof-output-atom $pid)))
+
 (= (materialize-proof-refs $term)
    (if (= $term (proof-ref $pid)) (materialize-proof-refs (materialize-proof $pid))
       (if (is-expr $term)
@@ -144,15 +150,26 @@
    (and (evidence-sets-overlap? $old-ev $new-ev)
       (or (> $old-score $new-score) (and (== $old-score $new-score) (evidence-subset? $new-ev $old-ev)))))
 
-(= (goal-proof-candidate-step $ev $score false $_oldpid) false)
-(= (goal-proof-candidate-step $ev $score true $oldpid)
-   (let ($old-score $old-ev) (proof-stats-by-id $oldpid)
-      (if (proof-overlap-dominates-score? $old-ev $old-score $ev $score) false true)))
+(= (goal-proof-candidate-comparable? false $_outkey $_oldpid) true)
+(= (goal-proof-candidate-comparable? true $outkey $oldpid)
+   (== (proof-output-key-by-id $oldpid) $outkey))
 
-(= (classify-goal-proof-candidate $gid $ev $score)
-   (fold-flat (goal-proof-candidate-step $ev $score)
+(= (goal-proof-candidate-step $_open $_outkey $ev $score false $_oldpid) false)
+(= (goal-proof-candidate-step $open $outkey $ev $score true $oldpid)
+   (if (goal-proof-candidate-comparable? $open $outkey $oldpid)
+      (let ($old-score $old-ev) (proof-stats-by-id $oldpid)
+         (if (and (== $old-score $score) (== $old-ev $ev)) false
+            (if (proof-overlap-dominates-score? $old-ev $old-score $ev $score) false true)))
+      true))
+
+(= (classify-goal-proof-candidate $gid $result $ev $score)
+   (let*
+      ((($_depth $goal $_expanded $_pending) (goal-by-id $gid))
+       ($open (goal-has-type-vars? $goal))
+       ($outkey (candidate-output-key $result)))
+      (fold-flat (goal-proof-candidate-step $open $outkey $ev $score)
       true
-      (goal-live-proof-ids $gid)))
+      (goal-live-proof-ids $gid))))
 
 (= (store-proof-candidate $gid (proof-candidate $kind $score $ev $children))
    (let*
@@ -170,19 +187,22 @@
    (if (= $result ($type $_kb $_prf $_tv)) (proof-atom-candidate $result $ev)
       (proof-candidate (leaf $result) (term-confidence $result) $ev ())))
 
-(= (proof-depends-on-goal-seen? $pid $gid $seen-pids)
+(= (proof-depends-on-goal-seen? $pid $gid $open-goal $seen-pids)
    (if (is-member $pid $seen-pids) false
-      (or (== (match &proof ($pid $proof-gid $_output $_kind $_score $_ev $_children) $proof-gid) $gid)
+      (or (and (not $open-goal) (== (match &proof ($pid $proof-gid $_output $_kind $_score $_ev $_children) $proof-gid) $gid))
          (fold-flat
             (|-> ($acc $child-pid)
-               (or $acc (proof-depends-on-goal-seen? $child-pid $gid (cons $pid $seen-pids))))
+               (or $acc (proof-depends-on-goal-seen? $child-pid $gid $open-goal (cons $pid $seen-pids))))
             false
             (match &proof ($pid $_proof-gid $_output $_kind $_score $_ev $kids)
                $kids)))))
 
 (= (candidate-is-cyclic? $gid ()) false)
 (= (candidate-is-cyclic? $gid (cons $pid $pids))
-   (or (proof-depends-on-goal-seen? $pid $gid ()) (candidate-is-cyclic? $gid $pids)))
+   (let*
+      ((($_depth $goal $_expanded $_pending) (goal-by-id $gid))
+       ($open-goal (goal-has-type-vars? $goal)))
+      (or (proof-depends-on-goal-seen? $pid $gid $open-goal ()) (candidate-is-cyclic? $gid $pids))))
 
 (= (wake-proof-commit-heap $agenda $gid $pid)
    (let*

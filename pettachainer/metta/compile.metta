@@ -67,10 +67,10 @@
 
 (=
    (in_fold $formula
-      ((@ $premises (head (tv $tv))) (: $kb $cclprf $ccltype $ccltv))
+      ((@ $premises (head (tv $tv))) (: $res-kb $cclprf $ccltype $ccltv))
       (prem $goal $elem $tve $prfelem))
    ((cons (CPU $formula ($tv $tve) $ntv) (cons $goal $premises))
-      (: $kb (cons $prfelem $cclprf) (cons $elem $ccltype) $ntv)))
+      (: $res-kb (cons $prfelem $cclprf) (cons $elem $ccltype) $ntv)))
 
 (= (exec-goal-type (CPU $f $args $res)) (CPU $f $args $res))
 (= (exec-goal-type (: $_kb $_prf $elem $_tv)) $elem)
@@ -84,14 +84,17 @@
       (($prem-kb (if (or (is-var $ctx) (is-var $vars)) (kbctx $kb) ($kb $ctx $vars)))
         ((cons (@ $fst (prem $fstgoal $fstelem $fsttv $fstprf)) $rst) (map-flat (in_map $prem-kb) $tail))
         ($init (($fstgoal) (: $prem-kb ($fstprf) ($fstelem) $fsttv)))
-        (($resNNprms (: $kb $cclprf $ccltype $ccltv))
+        (($resNNprms (: $res-kb $cclprf $ccltype $ccltv))
            (fold-flat (in_fold (atom_concat $head Formula)) $init $rst))
         (($execs $rcclprf $rccltype) ((reverse $resNNprms) (reverse $cclprf) (reverse $ccltype)))
         ($proof-token (if (= $rcclprf (cons $proof ())) $proof (cons conjunction $rcclprf))))
       (bundle-from-execs $execs $ccltv $proof-token)))
 
-(= (compound-source? (cons $head $_tail)) (and (not (is-var $head)) (is-member $head (And Or LikelierThan))))
-(= (compound-source? $_type) false)
+(= (compound-source? $type)
+   (if (is-expr $type)
+      (let $head (car-atom $type)
+         (and (not (is-var $head)) (is-member $head (And Or LikelierThan))))
+      false))
 
 (= (query-compound-child-bundle $kb $ctx $vars $premise)
    (if (compound-source? $premise)

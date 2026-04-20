@@ -167,7 +167,7 @@
    (let*
       (($score (term-confidence $result))
        ($ev (leaf-evidence-for-result $result))
-       ($accepted (classify-goal-proof-candidate $gid $ev $score))
+       ($accepted (classify-goal-proof-candidate $gid $result $ev $score))
        ($nagenda (commit-proof-candidate-heap $agenda $gid $accepted (leaf-result-candidate $result $ev))))
       $nagenda))
 
@@ -177,6 +177,26 @@
        ($agenda1 (fold-flat (expand-direct-goal-step $gid $goal) $agenda $results)))
       (expand-rule-goal-heap $agenda1 $gid $goal)))
 
+(= (open-rule-goal? $goal)
+   (if (= $goal ($type $_kb $_prf $_tv))
+      (or (not (== (extract-vars $type) ())) (contains-hash? $type))
+      false))
+
+(= (rule-goal-head-view ($goal $parent-gid))
+   (let $key (forward-indexable-premise-key $goal)
+      (if (== $key ())
+         ()
+         (match ccls_head_index ($key $rule-id)
+            (match rules ($rule-id $goal $args)
+               ($args $goal $parent-gid))))))
+
+(= (rule-goal-view ($goal $parent-gid))
+   (if (open-rule-goal? $goal)
+      (rule-goal-head-view ($goal $parent-gid))
+      (match ccls_index ($goal $rule-id)
+         (match rules ($rule-id $goal $args)
+            ($args $goal $parent-gid)))))
+
 (= (spawn-frontier-heap $agenda $parent-gid $bundle $score $seen $rev-pids)
    (case $bundle (
         ((and-bundle $goal ())
@@ -184,7 +204,7 @@
               (($pid-list (reverse $rev-pids)))
               (commit-proof-candidate-heap $agenda
                  $parent-gid
-                 (classify-goal-proof-candidate $parent-gid $seen $score)
+                 (classify-goal-proof-candidate $parent-gid $goal $seen $score)
                  (proof-candidate (rule $goal) $score $seen $pid-list))))
         ((and-bundle $_goal (cons $prem $_rest))
            (let*
@@ -203,10 +223,7 @@
 (= (expand-rule-goal-heap $agenda $parent-gid $goal)
    (fold-flat expand-rule-goal-fold
       $agenda
-      (collapse
-         (match ccls_index ($goal $rule-id)
-            (match rules ($rule-id $goal $args)
-               ($args $goal $parent-gid))))))
+      (collapse (rule-goal-view ($goal $parent-gid)))))
 
 (= (expand-rule-goal-fold $agenda ($args $goal $parent-gid))
    (let*

@@ -15,14 +15,19 @@
    (let $key (forward-indexable-premise-key $prem)
       (progn (if (== $key ()) () (kb-add-atom $backend prem_index ($key $prem $id $idx))) (+ $idx 1))))
 
+(= (kb-add-ccl-head-index $backend $id $ccls)
+   (let $key (forward-indexable-premise-key $ccls)
+      (if (== $key ()) () (kb-add-atom $backend ccls_head_index ($key $id)))))
+
 (= (kb-add-expr $backend $expr)
    (if (= $expr (rules ($args |- $ccls)))
       (let*
          (($id (if (== $backend live) (next-search-id ruleid) (next-search-id bwd_tmp_ruleid)))
            ($_1 (fold-flat (kb-add-prem $backend $id) 0 $args))
            ($_2 (kb-add-atom $backend ccls_index ($ccls $id)))
-           ($_3 (kb-add-atom $backend rules ($id $ccls $args)))
-           ($_4 (if (== $backend live) (mark-forward-agenda-dirty $ccls) ())))
+           ($_3 (kb-add-ccl-head-index $backend $id $ccls))
+           ($_4 (kb-add-atom $backend rules ($id $ccls $args)))
+           ($_5 (if (== $backend live) (mark-forward-agenda-dirty $ccls) ())))
          ())
       (progn
          (kb-add-atom $backend &kb $expr)
