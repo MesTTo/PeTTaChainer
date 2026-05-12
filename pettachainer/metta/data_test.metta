@@ -22,12 +22,6 @@
 (: 17 (AtTime (FeatureY 2.0) 11) (STV 1.0 0.9))
 (: 18 (AtTime (FeatureZ 51.0) 12) (STV 1.0 0.9))
 
-(: query_x_a (QueryXDist caseA (ParticleFromNormal 10.0 0.2)) (STV 1.0 1.0))
-(: query_y_a (QueryYDist caseA (ParticleFromNormal 100.0 0.2)) (STV 1.0 1.0))
-
-(: query_x_b (QueryXDist caseB (ParticleFromNormal 10.0 0.2)) (STV 1.0 1.0))
-(: query_y_b (QueryYDist caseB (ParticleFromNormal 2.0 0.2)) (STV 1.0 1.0))
-
 (: sample_rule
    (Implication
       (Premises
@@ -36,4 +30,17 @@
          (Compute + ($t 1) -> $t1)
          (AtTime (FeatureZ $zv) $t1))
       (Conclusions (XYZSample (Pair (XY $xv $yv) $zv))))
+   (STV 1.0 1.0))
+
+(: predict_rule
+   (Implication
+      (Premises
+         (XYZJointDist $jointDist)
+         (PredictInput $case $xv $yv)
+         (Compute PointMass ($xv) -> $xdist)
+         (Compute PointMass ($yv) -> $ydist)
+         (Compute DistMap2Formula (XY $xdist $ydist) -> $xydist)
+         (Compute CondDistFromJoint ($jointDist $xydist 5.0) -> $zdist))
+      (Conclusions
+         (PredictedZDist $case $zdist)))
    (STV 1.0 1.0))

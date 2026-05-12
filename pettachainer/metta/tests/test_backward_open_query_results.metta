@@ -26,8 +26,8 @@
    (collapse (query 50 openTimeKb (: $prf (AtTime $f $t) $tv)))
    ((: tx1 (AtTime (FeatureX 0) 1) (STV 1.0 0.9))
     (: ty1 (AtTime (FeatureY 0) 1) (STV 1.0 0.9))
-    (: (rule-proof timeAndRule (rule-proof conjunction tx1 ty1)) (AtTime (And (FeatureX 0) (FeatureY 0)) 1) (STV 1.0 0.81))
-    (: (rule-proof timeAndRule (rule-proof conjunction ty1 tx1)) (AtTime (And (FeatureY 0) (FeatureX 0)) 1) (STV 1.0 0.81))))
+    (: (rule-proof timeAndRule (rule-proof conjunction ty1 tx1)) (AtTime (And (FeatureY 0) (FeatureX 0)) 1) (STV 1.0 0.81))
+    (: (rule-proof timeAndRule (rule-proof conjunction tx1 ty1)) (AtTime (And (FeatureX 0) (FeatureY 0)) 1) (STV 1.0 0.81))))
 
 !(compileadd openAndFairKb (: haveMax (Have (i max)) (STV 1.0 1.0)))
 

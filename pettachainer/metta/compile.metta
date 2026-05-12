@@ -54,9 +54,11 @@
 
 (= (leaf-source-bundle $kb $ctx $vars $elem)
    (let $prem-kb (source-premise-kb $kb $ctx $vars)
-      (if (= $elem (CPU $f $args $res))
+      (if (is-var $elem)
+         (bundle-from-execs ((: $prem-kb $prf $elem $tv)) $tv $prf)
+         (if (= $elem (CPU $f $args $res))
          (bundle-from-execs ((CPU $f $args $res)) (cpu-premise-tv $f $args $res) cpu)
-         (bundle-from-execs ((: $prem-kb $prf $elem $tv)) $tv $prf))))
+         (bundle-from-execs ((: $prem-kb $prf $elem $tv)) $tv $prf)))))
 
 (= (in_map $kb $elem)
    (if (= $elem (CPU $f $args $res))
@@ -181,7 +183,7 @@
                         (compile-adapter-chain plain (: $kb $prfa $exec-type $atv))))
             (empty)))))
 
-(= (lower-source-premise $kb $ctx $vars $premise)
+(= (lower-source-premise-non-open $kb $ctx $vars $premise)
    (if (compound-source? $premise)
       (let (cons $head $tail) $premise (compound-premise-bundle $kb $ctx $vars $head $tail))
       (case $premise (
@@ -237,6 +239,11 @@
                     (bundle-from-execs ((CPU DistGreaterThanFormula ($a $b) $tv)) $tv cpu))
                  (bundle-from-execs ((: ($kb $ctx $vars) $prf ($rel $a $b) $tv)) $tv $prf)))
            ($other (bundle-from-execs ((: ($kb $ctx $vars) $prf $other $tv)) $tv $prf))))))
+
+(= (lower-source-premise $kb $ctx $vars $premise)
+   (if (and (is-expr $premise) (and (is-var (car-atom $premise)) (== (cdr-atom $premise) ())))
+      (leaf-source-bundle $kb $ctx $vars (car-atom $premise))
+      (lower-source-premise-non-open $kb $ctx $vars $premise)))
 
 (=
    (append-premise-bundle (compiled-premises $current-execs $current-proofs $current-tv)
@@ -410,27 +417,33 @@
 (= (mf $kb ($kb $t)) $t)
 
 (= (internalize-proof-structure $term)
-   (if (is-var $term) $term
+   (if (== $term ()) ()
+      (if (is-var $term) $term
       (if (= $term (: $kb $prf $type $tv)) ($type $kb $prf $tv)
          (if (is-expr $term)
             (cons (internalize-proof-structure (car-atom $term))
                (internalize-proof-structure-list (cdr-atom $term)))
-            $term))))
+            $term)))))
 
 (= (internalize-proof-structure-list $terms)
-   (if (== $terms ()) () (map-flat internalize-proof-structure $terms)))
+   (if (== $terms ()) ()
+      (cons (internalize-proof-structure (car-atom $terms))
+         (internalize-proof-structure-list (cdr-atom $terms)))))
 
 (= (externalize-proof-structure $term)
-   (if (is-var $term) $term
+   (if (== $term ()) ()
+      (if (is-var $term) $term
       (if (= $term ($type $kb $prf $tv))
          (if (and (is-expr $kb) (= $kb ($kbid $ctx $vars))) (: ($kbid $ctx $vars) $prf $type $tv) $term)
          (if (is-expr $term)
             (cons (externalize-proof-structure (car-atom $term))
                (externalize-proof-structure-list (cdr-atom $term)))
-            $term))))
+            $term)))))
 
 (= (externalize-proof-structure-list $terms)
-   (if (== $terms ()) () (map-flat externalize-proof-structure $terms)))
+   (if (== $terms ()) ()
+      (cons (externalize-proof-structure (car-atom $terms))
+         (externalize-proof-structure-list (cdr-atom $terms)))))
 
 (= (pretty-prf-token $prf)
    (if (= $prf (mined_implication $premk $conck))
