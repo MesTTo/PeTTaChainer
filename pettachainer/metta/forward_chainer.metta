@@ -2,6 +2,8 @@
 
 (= (forward-agenda-dirty-key $kb) (atom_concat fwd_agenda_dirty_ $kb))
 (= (forward-agenda-gen-key $kb) (atom_concat fwd_agenda_gen_ $kb))
+(= (forward-agenda-scope-key $kb) (atom_concat fwd_agenda_scope_ $kb))
+(= (forward-query-run-gen-key $kb) (atom_concat fwd_query_run_gen_ $kb))
 
 (= (forward-type-trigger-key $kbid $type)
    (if (is-var $type) (fwd_trigger $kbid any)
@@ -33,11 +35,29 @@
    (let $mgen (catch (get-state (forward-agenda-gen-key $kb)))
       (if-error $mgen 0 $mgen)))
 
+(= (forward-current-query-run-gen $kb)
+   (let $mgen (catch (get-state (forward-query-run-gen-key $kb)))
+      (if-error $mgen 0 $mgen)))
+
 (= (forward-next-agenda-gen $kb)
    (let*
       (($gen (+ 1 (forward-current-agenda-gen $kb)))
         ($_ (change-state! (forward-agenda-gen-key $kb) $gen)))
       $gen))
+
+(= (forward-next-query-run-gen $kb)
+   (let*
+      (($gen (+ 1 (forward-current-query-run-gen $kb)))
+        ($_ (change-state! (forward-query-run-gen-key $kb) $gen)))
+      $gen))
+
+(= (forward-current-agenda-scope $kb)
+   (let $mscope (catch (get-state (forward-agenda-scope-key $kb)))
+      (if-error $mscope (kb $kb) $mscope)))
+
+(= (forward-set-agenda-scope $kb $scope) (change-state! (forward-agenda-scope-key $kb) $scope))
+
+(= (forward-new-query-scope $kb) (fwd_query_scope $kb (forward-next-query-run-gen $kb)))
 
 (= (mark-forward-agenda-dirty ($type ($kbid MAIN Nil) $_prf $_tv))
    (forward-set-agenda-dirty $kbid true))
@@ -46,7 +66,9 @@
 (= (forward-fact-key ($type ($kbid $ctx $vars) $_prf $_tv)) (($kbid $ctx $vars) $type))
 (= (forward-fact-kb ($type ($kbid $_ctx $_vars) $_prf $_tv)) $kbid)
 
-(= (forward-pending-state-key $fact) (atom_concat fwd_pending_ (term_hash (forward-fact-key $fact))))
+(= (forward-pending-state-key $fact)
+   (let $kb (forward-fact-kb $fact)
+      (atom_concat fwd_pending_ (term_hash ((forward-current-agenda-scope $kb) (forward-fact-key $fact))))))
 
 (= (forward-pending-score-of $fact)
    (let*
@@ -109,6 +131,9 @@
               ($_set (set-forward-pending-score $fact $score)))
             $nagenda))))
 
+(= (forward-build-agenda-from-facts $facts)
+   (fold-flat agenda-push-fact-best (empty_heap) $facts))
+
 (= (forward-fact-upsert $agenda (@ $fact ($type ($kbid $_ctx $_vars) $prf $tv)))
    (let*
       (($kb ($kbid $_ctx $_vars))
@@ -164,22 +189,41 @@
                     ($type ($kb MAIN Nil) $prf $tv))))))
       (if (== $matches ()) () (car-atom $matches))))
 
+(= (forward-chain-with-agenda $steps $kb $agenda)
+   (forward-loop $steps $kb $agenda))
+
+(= (forward-chain-from-facts $steps $kb $facts)
+   (let*
+      (($old-scope (forward-current-agenda-scope $kb))
+        ($scope (forward-new-query-scope $kb))
+        ($_scope (forward-set-agenda-scope $kb $scope))
+        ($agenda (forward-build-agenda-from-facts $facts))
+        ($_run (forward-chain-with-agenda $steps $kb $agenda))
+        ($_dirty (forward-set-agenda-dirty $kb true))
+        ($_restore (forward-set-agenda-scope $kb $old-scope)))
+      true))
+
+(= (forward-chain-from-fact $steps $kb $fact)
+   (let*
+      (($old-scope (forward-current-agenda-scope $kb))
+        ($scope (forward-new-query-scope $kb))
+        ($_scope (forward-set-agenda-scope $kb $scope))
+        ($agenda (agenda-push-fact-best (empty_heap) $fact))
+        ($_run (forward-chain-with-agenda $steps $kb $agenda))
+        ($_dirty (forward-set-agenda-dirty $kb true))
+        ($_restore (forward-set-agenda-scope $kb $old-scope)))
+      true))
+
 (= (forward-chain $steps $kb)
    (let*
-      (($agenda (forward-refresh-agenda $kb))
+      (($_scope (forward-set-agenda-scope $kb (kb $kb)))
+        ($agenda (forward-refresh-agenda $kb))
         ($nagenda (forward-loop $steps $kb $agenda))
         ($_save (forward-save-agenda $kb $nagenda)))
       true))
 
 (= (forward-chain-from $steps $kb $target)
-   (let*
-      (($agenda (forward-refresh-agenda $kb))
-        ($fact (forward-select-fact $kb $target)))
-      (if (== $fact ()) false
-         (let*
-            (($agenda1 (if (<= $steps 0) $agenda (forward-step-fact $steps $kb $agenda $fact)))
-              ($nagenda (if (<= $steps 1) $agenda1 (forward-loop (- $steps 1) $kb $agenda1)))
-              ($_save (forward-save-agenda $kb $nagenda)))
-            true))))
+   (let $fact (forward-select-fact $kb $target)
+      (if (== $fact ()) false (forward-chain-from-fact $steps $kb $fact))))
 
 (= (forward-has-derived? $kb $type) (not (== (collapse (match &kb ($type ($kb MAIN Nil) $prf $tv) $prf)) ())))

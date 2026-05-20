@@ -5,7 +5,7 @@ import sys
 import threading
 import traceback
 import uuid
-from typing import List, Optional, Tuple
+from typing import List, Optional, Sequence, Tuple
 import __main__
 
 from petta import PeTTa
@@ -125,9 +125,35 @@ class PeTTaChainer:
         for atom in _as_list(self.handler.process_metta_string(f"!(match &kb $a (pretty $a))")):
             print(atom)
 
-    def forward_chain(self, steps: int = 100, term: Optional[str] = None):
+    def _select_forward_fact(self, term: str) -> Optional[str]:
+        evaluated_term = self._evaluate(term)
+        facts = _as_list(
+            self.handler.process_metta_string(f"!(forward-select-fact {self.kb} {evaluated_term})")
+        )
+        if not facts:
+            return None
+        fact = str(facts[0]).strip()
+        return None if fact == "()" else fact
+
+    def forward_chain_from_facts(self, terms: Sequence[str], steps: int = 100):
+        selected_facts: List[str] = []
+        for term in terms:
+            fact = self._select_forward_fact(term)
+            if fact is None:
+                return ["false"]
+            selected_facts.append(fact)
+        if not selected_facts:
+            return ["false"]
+        facts_expr = f"({' '.join(selected_facts)})"
+        return self.handler.process_metta_string(
+            f"!(forward-chain-from-facts {steps} {self.kb} {facts_expr})"
+        )
+
+    def forward_chain(self, steps: int = 100, term: Optional[str | Sequence[str]] = None):
         if term is None:
             return self.handler.process_metta_string(f"!(forward-chain {steps} {self.kb})")
+        if not isinstance(term, str):
+            return self.forward_chain_from_facts(term, steps=steps)
         evaluated_term = self._evaluate(term)
         return self.handler.process_metta_string(
             f"!(forward-chain-from {steps} {self.kb} {evaluated_term})"

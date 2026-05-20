@@ -88,6 +88,20 @@
 
 !(test (let $_ (forward-chain-from 1 selectedkb (LowPriority)) (forward-has-derived? selectedkb (SelectedGoal))) true)
 
+!(compileadd factseedkb (: highFact (HighPriority) (STV 1.0 1.0)))
+
+!(compileadd factseedkb (: lowFact (LowPriority) (STV 1.0 0.8)))
+
+!(compileadd factseedkb
+   (: lowToGoal (Implication (Premises (LowPriority)) (Conclusions (FactSeedGoal))) (STV 1.0 1.0)))
+
+!(test
+   (let*
+      (($facts (collapse (match &kb ((LowPriority) (factseedkb MAIN Nil) $prf $tv) ((LowPriority) (factseedkb MAIN Nil) $prf $tv))))
+        ($_ (forward-chain-from-facts 1 factseedkb $facts)))
+      (forward-has-derived? factseedkb (FactSeedGoal)))
+   true)
+
 !(compileadd ruleaddkb (: oldSeed (RuleSeed) (STV 1.0 1.0)))
 
 !(test (let $_ (forward-chain 1 ruleaddkb) (forward-has-derived? ruleaddkb (RuleAddGoal))) false)

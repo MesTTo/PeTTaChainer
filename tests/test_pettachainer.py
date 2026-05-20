@@ -35,6 +35,41 @@ class TestPeTTaChainer(unittest.TestCase):
         proofs = handler.query("(: $prf (DeltaGoal) $tv)", steps=10, timeout_sec=0)
         self.assertTrue(proofs)
 
+    def test_forward_chain_can_start_from_selected_facts(self):
+        handler = PeTTaChainer()
+        handler.add_atom("(: high_fact (HighPriority) (STV 1.0 1.0))")
+        handler.add_atom("(: low_fact (LowPriority) (STV 1.0 0.8))")
+        handler.add_atom(
+            "(: low_to_goal (Implication (Premises (LowPriority)) (Conclusions (FactSeedGoal))) (STV 1.0 1.0))"
+        )
+
+        result = handler.forward_chain_from_facts(["(LowPriority)"], steps=1)
+
+        self.assertIn("true", str(result))
+        proofs = handler.query("(: $prf (FactSeedGoal) $tv)", steps=10, timeout_sec=0)
+        self.assertTrue(proofs)
+
+    def test_forward_chain_sequence_term_uses_selected_facts(self):
+        handler = PeTTaChainer()
+        handler.add_atom("(: high_fact (HighPriority) (STV 1.0 1.0))")
+        handler.add_atom("(: low_fact (LowPriority) (STV 1.0 0.8))")
+        handler.add_atom(
+            "(: low_to_goal (Implication (Premises (LowPriority)) (Conclusions (FactSeedGoal2))) (STV 1.0 1.0))"
+        )
+
+        result = handler.forward_chain(steps=1, term=["(LowPriority)"])
+
+        self.assertIn("true", str(result))
+        proofs = handler.query("(: $prf (FactSeedGoal2) $tv)", steps=10, timeout_sec=0)
+        self.assertTrue(proofs)
+
+    def test_forward_chain_from_facts_returns_false_for_missing_seed(self):
+        handler = PeTTaChainer()
+
+        result = handler.forward_chain_from_facts(["(MissingSeed)"], steps=1)
+
+        self.assertEqual(result, ["false"])
+
 
 if __name__ == "__main__":
     unittest.main()
