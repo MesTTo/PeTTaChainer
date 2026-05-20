@@ -32,3 +32,24 @@
             (query 60 implicationPremiseKb (: $prf (C) $tv)))
          ()))
    true)
+
+!(compileadd multiPremiseImplicationQueryKb
+   (: ab_c
+      (Implication
+         (Premises
+            (A)
+            (B))
+         (Conclusions
+            (C)))
+      (STV 1.0 1.0)))
+
+!(test
+   (let (: (rule-proof ab_c (rule-proof conjunction (ctx proof $_ctx) (ctx proof $_ctx 1)))
+           (Implication (Premises (A) (B)) (Conclusions (C)))
+           (STV 1.0 0.9))
+      (superpose
+         (collapse
+            (query 60 multiPremiseImplicationQueryKb
+               (: $prf (Implication (Premises (A) (B)) (Conclusions (C))) $tv))))
+      true)
+   true)

@@ -359,11 +359,16 @@
       (if (= $Type (Implication (cons Premises $premises) (cons Conclusions $conclusions)))
          (let*
             (($plan (build-implication-plan $kb $prf $premises $conclusions))
-              ((compiled-implication $shape-kb $a $b $_nb $_na $_skip-inverse $_execs $_proofs $_atv) $plan))
-            ((((: $shape-kb $prfa $a (STV 1.0 1.0))) |- ((: $shape-kb $prfb $b $itv)))
-               (collapse
-                  (superpose ((compile-adapter-chain plain (: $shape-kb $prfb $b $btv))
-                              (compile-outputs (: $shape-kb $prfa $a $atv)))))))
+              ((compiled-implication $_shape-kb $_a $b $_nb $_na $_skip-inverse $execs $_proofs $_atv) $plan)
+              ($vars (extract-vars $Type))
+              ($mvars (if (== $vars ()) Nil $vars))
+              ($ctx (nextctx))
+              ($shape-kb ($kb $ctx $mvars))
+              ($ctxatoms (query-context-premise-adds $kb $ctx $mvars $execs))
+              ($goal (: $shape-kb $prfb $b $itv))
+              ($adapter-adds (collapse (compile-adapter-chain plain (: $shape-kb $prfb $b $btv))))
+              ($all-adds (union-atom $ctxatoms $adapter-adds)))
+            (((() |- ($goal)) $all-adds)))
          (((() |- ((: (kbctx $kb) $prf $Type $tv))) (compile-query-adds (: (kbctx $kb) $prf $Type $tv)))))))
 
 
@@ -391,6 +396,23 @@
       (: query-compound
          (Implication (cons Premises $premises) (cons Conclusions ($type)))
          (STV 1.0 1.0))))
+
+(= (query-context-premise-adds-step $kbid $ctx $mvars ($idx $adds) $premise)
+   (let $ctxprf (if (== $idx 0) (ctx proof $ctx) (ctx proof $ctx $idx))
+      (if (= $premise (CPU $_fun $_args $_res))
+         ($idx $adds)
+         (if (= $premise (: $_kb $_prf $type $_tv))
+            ((+ $idx 1)
+               (append $adds ((() |- ((: ($kbid $ctx $mvars) $ctxprf $type (STV 1.0 1.0)))))))
+            (if (= $premise ($type $_kb $_prf $_tv))
+               ((+ $idx 1)
+                  (append $adds ((() |- (($type ($kbid $ctx $mvars) $ctxprf (STV 1.0 1.0)))))))
+               ($idx $adds))))))
+
+(= (query-context-premise-adds $kbid $ctx $mvars $premises)
+   (let*
+      ((($_idx $adds) (fold-flat (query-context-premise-adds-step $kbid $ctx $mvars) (0 ()) $premises)))
+      $adds))
 
 (= (mm2compileQuery-from-compiled $kb $stmt $compiled)
    (if (= $compiled (((() |- ($ccl)) $adds)))
