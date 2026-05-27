@@ -8,16 +8,18 @@
    (let*
       (($stored-goal (copy_term $goal))
        ($goal-key (goal-key $stored-goal))
+       ($lookup-key (copy_term $goal-key))
        ($hits
           (collapse
              (once
-                (match &goal_lookup ($stored-key $gid)
+                (match &goal_lookup ($lookup-key $stored-key $gid)
                    (if (=alpha $stored-key $goal-key) $gid (empty)))))))
       (if (== $hits ())
          (let*
             (($gid (next-gid))
+             ($index-key (copy_term $goal-key))
              ($_1 (chainer-add-atom &goal ($gid $depth $stored-goal false 0.0)))
-             ($_2 (chainer-add-atom &goal_lookup ($goal-key $gid))))
+             ($_2 (chainer-add-atom &goal_lookup ($index-key $goal-key $gid))))
             $gid)
          (car-atom $hits))))
 

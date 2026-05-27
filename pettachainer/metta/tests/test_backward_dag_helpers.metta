@@ -84,6 +84,16 @@
 !(test
    (let*
       (($_clear (clear-backward-state))
+       ($_gidreset (change-state! bwd_gid 0))
+       ($open-a (ensure-goal-at-depth ((Pet $a) (kb MAIN ()) $prf $tv) 0))
+       ($open-x (ensure-goal-at-depth ((Pet $x) (kb MAIN ()) $p $t) 0))
+       ($closed (ensure-goal-at-depth ((Pet max) (kb MAIN ()) $p2 $t2) 0)))
+      ((== $open-a $open-x) (== $open-a $closed)))
+   (true false))
+
+!(test
+   (let*
+      (($_clear (clear-backward-state))
         ($_gidreset (change-state! bwd_gid 0))
         ($_pidreset (change-state! bwd_pid 0))
         ($gid (ensure-goal-at-depth ((Goal) (kb MAIN ()) $prf (STV 1.0 1.0)) 0))
