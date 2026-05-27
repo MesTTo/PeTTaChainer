@@ -37,6 +37,34 @@
 (= (premises-expected-confidence (cons $prem $rest))
    (min (term-confidence $prem) (premises-expected-confidence $rest)))
 
+(= (bounded-agenda-target-size $steps) (min 1000 (max 1 $steps)))
+(= (bounded-agenda-prune-factor) 64)
+
+(= (set-bounded-agenda-pruning $enabled) (change-state! bounded_agenda_pruning $enabled))
+(= (bounded-agenda-pruning?)
+   (let $enabled (catch (get-state bounded_agenda_pruning))
+      (if-error $enabled true $enabled)))
+
+(= (heap-take-best $count $src $dst)
+   (if (or (<= $count 0) (== (heap_size $src) 0)) $dst
+      (let*
+         (($rest (get_from_heap $src $key $item))
+          ($next (add_to_heap $dst $key $item)))
+         (heap-take-best (- $count 1) $rest $next))))
+
+(= (heap-prune-to-size $target $agenda)
+   (heap-take-best $target $agenda (empty_heap)))
+
+(= (bounded-agenda-prune $steps $agenda)
+   (if (not (bounded-agenda-pruning?)) $agenda
+      (let*
+         (($target (bounded-agenda-target-size $steps))
+          ($size (heap_size $agenda))
+          ($threshold (* $target (bounded-agenda-prune-factor))))
+         (if (> $size $threshold)
+            (heap-prune-to-size $target $agenda)
+            $agenda))))
+
 (= (confidence-to-count $conf) (/ (* $conf 800) (- 1 (min-atom ($conf 0.9999)))))
 
 (= (mergetvs (STV $m1 $conf1) (STV $m2 $conf2))

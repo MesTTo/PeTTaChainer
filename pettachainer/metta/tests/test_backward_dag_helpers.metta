@@ -36,6 +36,45 @@
                (cons ((Creature #) (kb MAIN Nil) $prfC $tvB) (cons (CPU MpFormula ($iitv $tvB) $tvA) ()))))))
    0.5689089)
 
+!(test
+   (let*
+      (($heap0 (empty_heap))
+       ($heap1 (add_to_heap $heap0 3.0 low))
+       ($heap2 (add_to_heap $heap1 1.0 high))
+       ($heap3 (add_to_heap $heap2 2.0 mid))
+       ($pruned (heap-prune-to-size 2 $heap3))
+       ($rest (get_from_heap $pruned $key1 $item1))
+       ($_empty (get_from_heap $rest $key2 $item2)))
+      ($item1 $item2 (heap_size $rest)))
+   (high mid 1))
+
+!(test
+   (let*
+      (($heap0 (empty_heap))
+       ($heap1 (add_to_heap $heap0 1.0 high))
+       ($heap2 (add_to_heap $heap1 2.0 low))
+       ($kept (bounded-agenda-prune 1 $heap2)))
+      (heap_size $kept))
+   2)
+
+!(test
+   (let*
+      (($heap0 (empty_heap))
+       ($heap1 (add_to_heap $heap0 1.0 high))
+       ($empty (bounded-agenda-prune 0 $heap1)))
+      (heap_size $empty))
+   1)
+
+!(test
+   (let*
+      (($heap0 (empty_heap))
+       ($heap1 (add_to_heap $heap0 1.0 high))
+       ($_disable (set-bounded-agenda-pruning false))
+       ($kept (bounded-agenda-prune 0 $heap1))
+       ($_enable (set-bounded-agenda-pruning true)))
+      (heap_size $kept))
+   1)
+
 (= (clear-backward-state)
    (progn
       (foreach-flat remove-all-atoms (() &goal &goal_lookup &goal_waiter &aggregate &proof &proof_live_cache &goal_live_cache))

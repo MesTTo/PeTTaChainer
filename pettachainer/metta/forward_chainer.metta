@@ -172,7 +172,10 @@
       (let $rest (get_from_heap $agenda $_priority $item)
          (let (qitem $score $fact) $item
             (if (== (forward-pending-score-of $fact) $score)
-               (forward-loop (- $steps 1) $kb (forward-step-fact $steps $kb $rest $fact))
+               (let*
+                  (($next-steps (- $steps 1))
+                   ($nagenda (bounded-agenda-prune $next-steps (forward-step-fact $steps $kb $rest $fact))))
+                  (forward-loop $next-steps $kb $nagenda))
                (forward-loop $steps $kb $rest))))))
 
 (= (forward-target-type (: $_name $type $_tv)) $type)

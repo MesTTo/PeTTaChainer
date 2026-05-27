@@ -19,6 +19,14 @@ Run the simple forward vs backward chaining benchmark:
 .venv/bin/python pettachainer/benchmarks/forward_vs_backward.py --depths 10,25,50 --noise-branching 8 --repeats 3
 ```
 
+Run the bounded priority queue benchmark:
+
+```bash
+.venv/bin/python pettachainer/benchmarks/bounded_queue.py --fanouts 2000,8000 --steps 100 --repeats 3
+```
+
+Add `--compare-pruning` to compare pruning enabled and disabled within the same checkout.
+
 Optional JSON export:
 
 ```bash

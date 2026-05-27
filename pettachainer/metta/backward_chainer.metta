@@ -296,15 +296,19 @@
             (($_clear
                  (progn (remove-atom &goal ($gid $depth $goal $expanded $pending))
                     (chainer-add-atom &goal ($gid $depth $goal $expanded 0.0))))
-             ($nagenda (expand-goal-heap $agenda $steps $score $gid)))
-            (search-agenda-heap (- $steps 1) $nagenda))
+             ($next-steps (- $steps 1))
+             ($nagenda (bounded-agenda-prune $next-steps (expand-goal-heap $agenda $steps $score $gid))))
+            (search-agenda-heap $next-steps $nagenda))
          (search-agenda-heap $steps $agenda))))
 
 (= (search-agenda-step $steps $agenda (qagg $score $agg-gid))
    (let*
       ((($child-gid $args $base-score $pending $current-pid) (aggregate-by-id $agg-gid)))
       (if (== $pending $score)
-         (search-agenda-heap (- $steps 1) (run-aggregate-heap $agenda $agg-gid))
+         (let*
+            (($next-steps (- $steps 1))
+             ($nagenda (bounded-agenda-prune $next-steps (run-aggregate-heap $agenda $agg-gid))))
+            (search-agenda-heap $next-steps $nagenda))
          (search-agenda-heap $steps $agenda))))
 
 (= (search-agenda-heap $steps $agenda)
