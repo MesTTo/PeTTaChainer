@@ -83,4 +83,4 @@
 !(test (collapse (query 3 priorityNegKb (: $prf (NegPriorityGoal) $tv))) ())
 
 !(test (collapse (query 4 priorityNegKb (: $prf (NegPriorityGoal) $tv)))
-   ((: (rule-proof lowNegRule lowInput) (NegPriorityGoal) (STV 0.9 0.9))))
+   ((: (rule-proof lowNegRule (negated lowInput)) (NegPriorityGoal) (STV 0.9 0.9))))

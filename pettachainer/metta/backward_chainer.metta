@@ -244,11 +244,15 @@
       (case $premises (
            (()
               (let*
-                 (($pid-list (reverse $rev-pids)))
+                 (($pid-list (reverse $rev-pids))
+                  ($candidate
+                     (normalize-proof-candidate-evidence
+                        (proof-candidate (rule $goal) $score $seen $pid-list)))
+                  ((proof-candidate $_kind $_candidate-score $candidate-ev $_children) $candidate))
                  (commit-proof-candidate-heap $agenda
                     $parent-gid
-                    (classify-goal-proof-candidate $parent-gid $goal $seen $score)
-                    (proof-candidate (rule $goal) $score $seen $pid-list))))
+                    (classify-goal-proof-candidate $parent-gid $goal $candidate-ev $score)
+                    $candidate)))
            ((cons $prem $_rest)
               (let*
                  ((($parent-depth $_goal1 $_expanded $_pending) (goal-by-id $parent-gid))
