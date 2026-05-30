@@ -298,7 +298,8 @@
                  (STV 1.0 1.0)
                  cpu))
            ((Not $a)
-              (bundle-from-execs ((: ($kb $ctx $vars) $prfa $a $tv_a) (CPU NotFormula ($tv_a) $tv)) $tv $prfa))
+              (let $prem-kb (source-premise-kb $kb $ctx $vars)
+                 (bundle-from-execs ((: $prem-kb $prfa $a $tv_a) (CPU NotFormula ($tv_a) $tv)) $tv $prfa)))
            (($rel $a $b)
               (if (is-member $rel (GreaterThan >))
                  (if (is-var $b) (bundle-from-execs ((CPU DistGreaterThanDistFormula ($a $b) $tv)) $tv cpu)
@@ -330,9 +331,13 @@
 
 (= (lower-query-assumption-premise $kb $ctx $vars $premise)
    (if (is-var $premise) (lower-source-premise $kb $ctx $vars $premise)
-      (if (= $premise (Implication (cons Premises $_premises) (cons Conclusions $_conclusions)))
-         (leaf-source-bundle $kb $ctx $vars $premise)
-         (lower-source-premise $kb $ctx $vars $premise))))
+      (case $premise (
+         ((Implication (cons Premises $_premises) (cons Conclusions $_conclusions))
+            (leaf-source-bundle $kb $ctx $vars $premise))
+         ((Not $a)
+            (let $prem-kb (source-premise-kb $kb $ctx $vars)
+               (bundle-from-execs ((: $prem-kb $prf $a (STV 0.0 1.0))) (STV 1.0 1.0) $prf)))
+         ($other (lower-source-premise $kb $ctx $vars $premise))))))
 
 (= (lower-query-assumption-premises-step $kb $ctx $vars $acc $premise)
    (append-premise-bundle $acc (lower-query-assumption-premise $kb $ctx $vars $premise)))
@@ -472,7 +477,7 @@
               ($b (seq2expr $conclusions))
               ($ctxatoms (query-context-premise-adds $kb $ctx $mvars $execs))
               ($goal (: $shape-kb $prfb $b $itv))
-              ($adapter-adds (collapse (compile-adapter-chain plain (: $shape-kb $prfb $b $btv))))
+              ($adapter-adds (collapse (compile-adapter-chain query (: $shape-kb $prfb $b $btv))))
 	              ($all-adds (union-atom $ctxatoms $adapter-adds)))
 	            (((() |- ($goal)) $all-adds)))
          (if (bidirectional-implication-type? $Type)
@@ -492,8 +497,8 @@
                     ($right-goal (: $right-shape-kb $right-prf (seq2expr $left) $right-tv))
                     ($left-ctxatoms (query-context-premise-adds $kb $left-ctx $mvars $left-execs))
                     ($right-ctxatoms (query-context-premise-adds $kb $right-ctx $mvars $right-execs))
-                    ($left-adapter-adds (collapse (compile-adapter-chain plain (: $left-shape-kb $left-prf (seq2expr $right) $left-adapter-tv))))
-                    ($right-adapter-adds (collapse (compile-adapter-chain plain (: $right-shape-kb $right-prf (seq2expr $left) $right-adapter-tv))))
+                    ($left-adapter-adds (collapse (compile-adapter-chain query (: $left-shape-kb $left-prf (seq2expr $right) $left-adapter-tv))))
+                    ($right-adapter-adds (collapse (compile-adapter-chain query (: $right-shape-kb $right-prf (seq2expr $left) $right-adapter-tv))))
                     ($adds (union-atom
                        (union-atom $left-ctxatoms $left-adapter-adds)
                        (union-atom $right-ctxatoms $right-adapter-adds)))
@@ -549,9 +554,11 @@
    (let $ctxprf (if (== $idx 0) (ctx proof $ctx) (ctx proof $ctx $idx))
       (if (= $premise (CPU $_fun $_args $_res))
          ($idx $adds)
-         (if (= $premise (: $_kb $_prf $type $_tv))
+         (if (= $premise (: $_kb $_prf $type $tv))
             ((+ $idx 1)
-               (append $adds (query-context-premise-assumption-adds $kbid $ctx $mvars $ctxprf $type (STV 1.0 1.0))))
+               (append $adds
+                  (query-context-premise-assumption-adds $kbid $ctx $mvars $ctxprf $type
+                     (if (is-var $tv) (STV 1.0 1.0) $tv))))
             ($idx $adds)))))
 
 (= (query-context-premise-adds $kbid $ctx $mvars $premises)
