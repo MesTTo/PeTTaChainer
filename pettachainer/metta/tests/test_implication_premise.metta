@@ -33,6 +33,32 @@
          ()))
    true)
 
+!(test
+   (let (: $_prf $_type (STV 0.0 1.0))
+      (superpose
+         (collapse
+            (query 60 implicationPremiseKb
+               (: $prf
+                  (Implication
+                     (Premises (Not (Dog)))
+                     (Conclusions (Dog)))
+                  $tv))))
+      true)
+   true)
+
+!(test
+   (not
+      (==
+         (collapse
+            (query 60 implicationPremiseKb
+               (: $prf
+                  (Implication
+                     (Premises (Not (Dog)))
+                     (Conclusions (Not (Dog))))
+                  $tv)))
+         ()))
+   true)
+
 !(compileadd multiPremiseImplicationQueryKb
    (: ab_c
       (Implication
