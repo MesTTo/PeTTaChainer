@@ -171,11 +171,23 @@
       true
       (goal-live-proof-ids $gid))))
 
+(= (proof-candidate-stored-evidence (proof-candidate (rule ($_type $_kb $prf $_tv)) $_score $ev $_children))
+   (if (proof-term-contains-negated? $prf)
+      (list_to_set (once (proof-term-evidence-list-mode proof-walk-in-kb $prf)))
+      $ev))
+(= (proof-candidate-stored-evidence (proof-candidate $_kind $_score $ev $_children)) $ev)
+
+(= (normalize-proof-candidate-evidence (proof-candidate $kind $score $ev $children))
+   (proof-candidate $kind $score
+      (proof-candidate-stored-evidence (proof-candidate $kind $score $ev $children))
+      $children))
+
 (= (store-proof-candidate $gid (proof-candidate $kind $score $ev $children))
    (let*
       (($pid (next-pid))
         ($output (proof-output-atom-kind $kind $pid))
-        ($_1 (chainer-add-atom &proof ($pid $gid $output $kind $score $ev $children)))
+        ($stored-ev (proof-candidate-stored-evidence (proof-candidate $kind $score $ev $children)))
+        ($_1 (chainer-add-atom &proof ($pid $gid $output $kind $score $stored-ev $children)))
         ($_2 (cache-proof-live! $pid true))
         ($_3 (append-goal-live-cache! $gid $pid)))
       $pid))

@@ -164,13 +164,28 @@
    (append (proof-term-evidence-list-mode $mode $child)
       (proof-term-evidence-children-mode $mode $rest)))
 
+(= (evidence-negate $ev)
+   (case $ev (
+      ((fact-ev $kb $prf $type) (not-fact-ev $kb $prf $type))
+      ((not-fact-ev $kb $prf $type) (fact-ev $kb $prf $type))
+      ($other (not-ev $other)))))
+
+(= (evidence-negate-list ()) ())
+(= (evidence-negate-list (cons $ev $rest))
+   (cons (evidence-negate $ev) (evidence-negate-list $rest)))
+
+(= (proof-term-negated? $prf)
+   (if (is-expr $prf) (== (car-atom $prf) negated) false))
+
 (= (proof-term-evidence-list-mode $mode (@ $prf (proof-ref $pid))) (snd (proof-stats-by-id $pid)))
 (= (proof-term-evidence-list-mode $mode (@ $prf (merge/revision $left $right)))
    (append (proof-term-evidence-list-mode $mode $left) (proof-term-evidence-list-mode $mode $right)))
 (= (proof-term-evidence-list-mode $mode $prf)
    (if (is-var $prf) ()
-      (let $children (proof-term-children-mode $mode $prf)
-         (if (== $children ()) (cons $prf ()) (proof-term-evidence-children-mode $mode $children)))))
+      (if (proof-term-negated? $prf)
+         (evidence-negate-list (proof-term-evidence-list-mode $mode (car-atom (cdr-atom $prf))))
+         (let $children (proof-term-children-mode $mode $prf)
+            (if (== $children ()) (cons $prf ()) (proof-term-evidence-children-mode $mode $children))))))
 
 (= (proof-term-evidence-list $prf) (once (proof-term-evidence-list-mode proof-walk-plain $prf)))
 
@@ -180,6 +195,15 @@
 (= (evidence-sets-overlap? $set-a $set-b) (not (== (intersection-atom $set-a $set-b) ())))
 
 (= (evidence-subset? $set-a $set-b) (== (subtraction-atom $set-a $set-b) ()))
+
+(= (proof-term-contains-negated-list? ()) false)
+(= (proof-term-contains-negated-list? (cons $child $rest))
+   (or (proof-term-contains-negated? $child) (proof-term-contains-negated-list? $rest)))
+
+(= (proof-term-contains-negated? $prf)
+   (if (is-var $prf) false
+      (if (proof-term-negated? $prf) true
+         (if (is-expr $prf) (proof-term-contains-negated-list? (cdr-atom $prf)) false))))
 
 (= (merge-proof-atoms $proof-a $proof-b)
    (if (== $proof-a $proof-b) $proof-a

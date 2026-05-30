@@ -299,7 +299,7 @@
                  cpu))
            ((Not $a)
               (let $prem-kb (source-premise-kb $kb $ctx $vars)
-                 (bundle-from-execs ((: $prem-kb $prfa $a $tv_a) (CPU NotFormula ($tv_a) $tv)) $tv $prfa)))
+                 (bundle-from-execs ((: $prem-kb $prfa $a $tv_a) (CPU NotFormula ($tv_a) $tv)) $tv (negated $prfa))))
            (($rel $a $b)
               (if (is-member $rel (GreaterThan >))
                  (if (is-var $b) (bundle-from-execs ((CPU DistGreaterThanDistFormula ($a $b) $tv)) $tv cpu)
