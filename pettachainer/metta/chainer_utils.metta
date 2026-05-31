@@ -51,11 +51,13 @@
          (if (== $fun InversionFormula)
             (let*
                ((($a $b $ab) $args)
+                 ($na (normalize-expected-tv $a))
+                 ($nb (normalize-expected-tv $b))
+                 ($nab (normalize-expected-tv $ab))
                  ($res
-                    (reduce
-                       (reduce
-                          (cons $fun
-                             ((normalize-expected-tv $a) (normalize-expected-tv $b) (normalize-expected-tv $ab)))))))
+                    (if (or (is-var $a) (is-var $b))
+                       (STV 1.0 (* (min-atom ((tv-confidence $na) (tv-confidence $nb) (tv-confidence $nab))) 0.9))
+                       (reduce (reduce (cons $fun ($na $nb $nab)))))))
                $res)
             ()))))))
 

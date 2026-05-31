@@ -14,6 +14,15 @@ This is useful when forward chaining feels unexpectedly slow, because it separat
 - the cost of reaching the goal facts
 - the cost of materializing unrelated reachable facts that backward search never touches
 
+`backward_materialize.py` benchmarks the fact-materializing backward chainer.
+In its default `same-target` mode, the plain run answers the same deep target repeatedly with normal
+backward queries. The materialized run answers it once with `query-materialize`, which stores the
+proof tree facts, then answers the remaining repetitions with a low step budget.
+
+It also has `--mode sibling-targets`, which builds several related targets that all depend on the
+same deepest chain fact. That mode measures reuse of a materialized intermediate fact rather than
+reuse of the exact materialized target.
+
 It compares:
 
 - `NatDist`: exact fold via `NatDistAddBernoulliFromSTV`
@@ -33,6 +42,14 @@ python pettachainer/benchmarks/particle_vs_nat.py --sizes 100,500,1000 --particl
 
 ```bash
 .venv/bin/python pettachainer/benchmarks/forward_vs_backward.py --depths 10,25,50 --noise-branching 8 --repeats 3
+```
+
+```bash
+.venv/bin/python pettachainer/benchmarks/backward_materialize.py --depths 5,10 --queries 200 --repeats 3
+```
+
+```bash
+.venv/bin/python pettachainer/benchmarks/backward_materialize.py --mode sibling-targets --depths 5 --queries 20 --repeats 3
 ```
 
 ## Output Columns
@@ -60,6 +77,21 @@ For `forward_vs_backward.py`:
 - `forward_full_s`: mean forward time to drain all reachable work
 - `goal_over_backward`: `forward_goal_s / backward_s`
 - `full_over_backward`: `forward_full_s / backward_s`
+
+For `backward_materialize.py`:
+
+- `mode`: `same-target` or `sibling-targets`
+- `depth`: length of the shared implication chain
+- `queries`: number of queries answered in the batch
+- `rules`: total implication rules loaded into the KB
+- `query_steps`: step budget used for the plain queries and first materializing query
+- `cached_steps`: step budget used after materialization
+- `plain_batch_s`: mean time to answer all targets with normal backward queries
+- `materialize_first_s`: mean time for the first `query-materialize`
+- `materialized_tail_s`: mean time for the remaining normal queries after materialization
+- `materialized_batch_s`: `materialize_first_s + materialized_tail_s`
+- `total_speedup`: `plain_batch_s / materialized_batch_s`
+- `tail_speedup`: estimated non-materialized tail cost divided by `materialized_tail_s`
 
 ## Bounded Queue Pruning
 

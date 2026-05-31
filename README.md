@@ -19,6 +19,12 @@ Run the simple forward vs backward chaining benchmark:
 .venv/bin/python pettachainer/benchmarks/forward_vs_backward.py --depths 10,25,50 --noise-branching 8 --repeats 3
 ```
 
+Run the backward materialization benchmark:
+
+```bash
+.venv/bin/python pettachainer/benchmarks/backward_materialize.py --depths 5,10 --queries 200 --repeats 3
+```
+
 Run the bounded priority queue benchmark:
 
 ```bash
