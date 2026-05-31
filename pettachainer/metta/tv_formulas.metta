@@ -39,8 +39,22 @@
 
 (= (NotFormula (STV $s $c)) (STV (- 1 $s) $c))
 
+(= (InversionSmallestIntersectionProbability $sa $sb)
+   (max 0.0 (/ (- (+ $sa $sb) 1.0) $sa)))
+
+(= (InversionLargestIntersectionProbability $sa $sb)
+   (min 1.0 (/ $sb $sa)))
+
+(= (InversionConsistency (STV $sa $_ca) (STV $sb $_cb) (STV $sab $_cab))
+   (if (<= $sa 0.0) false
+      (if (<= $sb 0.0) false
+         (and (<= (InversionSmallestIntersectionProbability $sa $sb) $sab)
+            (<= $sab (InversionLargestIntersectionProbability $sa $sb))))))
+
 (= (InversionFormula (STV $sa $ca) (STV $sb $cb) (STV $sab $cab))
-   (STV (/ (* $sb $sab) $sa) (* (min-atom ($ca $cb $cab)) 0.9)))
+   (if (InversionConsistency (STV $sa $ca) (STV $sb $cb) (STV $sab $cab))
+      (STV (/ (* $sab $sa) $sb) (* (min-atom ($ca $cb $cab)) 0.9))
+      (STV 0.0 0.0)))
 
 (= (Equal $a $b) (== $a $b))
 
