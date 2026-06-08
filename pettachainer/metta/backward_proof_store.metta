@@ -121,24 +121,27 @@
    (let*
       (($kind (proof-kind-by-id $pid))
        ($output (proof-output-atom $pid)))
-      (if (and (materializable-proof-kind? $kind) (materializable-proof-output? $output))
-         (let $fact (materialize-result-atom $output)
-            (progn
-               (forward-fact-upsert (empty_heap) $fact)
-               (mark-forward-agenda-dirty $fact)))
-         ())))
+	      (if (and (materializable-proof-kind? $kind) (materializable-proof-output? $output))
+	         (let $fact (materialize-result-atom $output)
+	            (progn
+	               (forward-fact-upsert (empty_heap) $fact)
+	               (mark-forward-agenda-dirty $fact)
+	               ()))
+	         ())))
 
 (= (materialize-proof-tree-to-kb $pid)
-   (let $_children (materialize-proof-list-to-kb (proof-children-by-id $pid))
-      (materialize-proof-node-to-kb $pid)))
+   (let $_children (collapse (materialize-proof-list-to-kb (proof-children-by-id $pid)))
+      (let $_node (collapse (materialize-proof-node-to-kb $pid))
+         ())))
 
 (= (materialize-proof-list-to-kb ()) ())
 (= (materialize-proof-list-to-kb (cons $pid $rest))
-   (let $_head (materialize-proof-tree-to-kb $pid)
+   (let $_head (collapse (materialize-proof-tree-to-kb $pid))
       (materialize-proof-list-to-kb $rest)))
 
 (= (materialize-goal-proofs-to-kb $gid)
-   (materialize-proof-list-to-kb (goal-live-proof-ids $gid)))
+   (let $_materialized (collapse (materialize-proof-list-to-kb (goal-live-proof-ids $gid)))
+      ()))
 
 (= (proof-live-cache-epoch)
    (let $n (get-state bwd_live_epoch) (if-error $n 0 $n)))

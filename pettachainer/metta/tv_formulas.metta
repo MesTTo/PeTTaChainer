@@ -1,6 +1,6 @@
-(= (MpFormula (STV $abs $abc) (STV $as $ac)) (STV (* $abs $as) (* $as (min $abc $ac))))
+(= (CTVFormula (CTV $pos $_neg) $ctv) (CTVFormula $pos $ctv))
 
-(= (TotalMpFormula (STV $as $ac) (STV $bs_a $bc_a) (STV $bs_na $bc_na))
+(= (CTVFormula (STV $as $ac) (CTV (STV $bs_a $bc_a) (STV $bs_na $bc_na)))
    (STV
       (+ (* $bs_a $as) (* $bs_na (- 1 $as)))
       (+ (* $as (min $bc_a $ac)) (* (- 1 $as) (min $bc_na $ac)))))
@@ -51,10 +51,14 @@
          (and (<= (InversionSmallestIntersectionProbability $sa $sb) $sab)
             (<= $sab (InversionLargestIntersectionProbability $sa $sb))))))
 
-(= (InversionFormula (STV $sa $ca) (STV $sb $cb) (STV $sab $cab))
-   (if (InversionConsistency (STV $sa $ca) (STV $sb $cb) (STV $sab $cab))
-      (STV (/ (* $sab $sa) $sb) (* (min-atom ($ca $cb $cab)) 0.9))
-      (STV 0.0 0.0)))
+(= (CTVInversionFormula (STV $sa $ca) (CTV (STV $sb_a $cb_a) (STV $sb_na $cb_na)))
+   (let*
+      (((STV $sb $cb) (CTVFormula (STV $sa $ca) (CTV (STV $sb_a $cb_a) (STV $sb_na $cb_na)))))
+      (if (or (<= $sb 0.0) (>= $sb 1.0))
+         (CTV (STV 0.0 0.0) (STV 0.0 0.0))
+         (CTV
+            (STV (/ (* $sb_a $sa) $sb) (* (min-atom ($ca $cb_a $cb)) 0.9))
+            (STV (/ (* (- 1.0 $sb_a) $sa) (- 1.0 $sb)) (* (min-atom ($ca $cb_a $cb)) 0.9))))))
 
 (= (Equal $a $b) (== $a $b))
 

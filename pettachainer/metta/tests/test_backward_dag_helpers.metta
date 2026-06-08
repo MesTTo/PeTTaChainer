@@ -4,13 +4,16 @@
 
 !(test (tv-confidence maybeUnknown) 1.0)
 
-!(test (term-confidence (CPU MpFormula ((STV 1.0 0.6) (STV 0.8 0.9)) $out)) 0.48)
+!(test (tv-confidence (CTV (STV 0.9 0.7) (STV 0.1 0.4))) 0.4)
 
-!(test (MpFormula (STV 1.0 0.6) (STV 0.0 1.0)) (STV 0.0 0.0))
+!(test
+   (term-confidence
+      (CPU CTVFormula ((STV 0.8 0.9) (CTV (STV 1.0 0.6) (STV 0.0 0.4))) $out))
+   0.5599999999999999)
 
-!(test (TotalMpFormula (STV 0.5 1.0) (STV 1.0 0.5) (STV 0.1 0.5)) (STV 0.55 0.5))
+!(test (CTVFormula (STV 0.5 1.0) (CTV (STV 1.0 0.5) (STV 0.1 0.5))) (STV 0.55 0.5))
 
-!(test (TotalMpFormula (STV 0.5 1.0) (STV 0.8 0.6) (STV 0.0 0.0)) (STV 0.4 0.3))
+!(test (CTVFormula (STV 0.5 1.0) (CTV (STV 0.8 0.6) (STV 0.0 0.0))) (STV 0.4 0.3))
 
 !(test (term-confidence (CPU NotFormula ((STV 0.75 0.6)) $out)) 0.6)
 
@@ -26,45 +29,46 @@
 
 !(test (term-confidence (CPU LikelierThanFormula ((STV 0.8 0.4) (STV 0.9 0.7)) $out)) 0.4)
 
-!(test (term-confidence (CPU InversionFormula ($a $b (STV 0.8 0.632121)) $out)) 0.5689089)
+!(test
+   (term-confidence (CPU CTVInversionFormula ($a (CTV (STV 0.8 0.632121) (STV 0.1 0.632121))) $out))
+   0.5689089)
 
-!(test (InversionFormula (STV 0.2 1.0) (STV 0.8 1.0) (STV 0.8 0.9)) (STV 0.20000000000000004 0.81))
+!(test
+   (CTVInversionFormula (STV 0.2 1.0) (CTV (STV 0.8 1.0) (STV 0.1 1.0)))
+   (CTV (STV 0.6666666666666666 0.9) (STV 0.05263157894736841 0.9)))
 
-!(test (InversionFormula (STV 0.8 1.0) (STV 0.2 1.0) (STV 0.9 0.9)) (STV 0.0 0.0))
-
-!(test (InversionFormula (STV 0.0 1.0) (STV 0.8 1.0) (STV 0.8 0.9)) (STV 0.0 0.0))
-
-!(test (InversionFormula (STV 0.8 1.0) (STV 0.0 1.0) (STV 0.8 0.9)) (STV 0.0 0.0))
+!(test
+   (CTVInversionFormula (STV 0.0 1.0) (CTV (STV 0.8 1.0) (STV 0.1 1.0)))
+   (CTV (STV 0.0 0.9) (STV 0.0 0.9)))
 
 !(test
    (premises-expected-confidence
-      (cons (CPU MpFormula ((STV 1.0 0.2) (STV 1.0 1.0)) $tv1)
-         (cons (CPU MpFormula ((STV 1.0 0.55) $tv1) $tv2) ())))
+      (cons (CPU CTVFormula ((STV 1.0 1.0) (CTV (STV 1.0 0.2) (STV 0.0 1.0))) $tv1)
+         (cons (CPU CTVFormula ($tv1 (CTV (STV 1.0 0.55) (STV 0.0 1.0))) $tv2) ())))
    0.2)
 
 !(test
    (premises-expected-confidence
-      (cons (CPU MpFormula ((STV 1.0 0.8) (STV 0.25 1.0)) $tv) ()))
-   0.2)
+      (cons (CPU CTVFormula ((STV 0.25 1.0) (CTV (STV 1.0 0.8) (STV 0.0 1.0))) $tv) ()))
+   0.95)
 
 !(test
    (premises-expected-confidence
       (cons (CPU NotFormula ((STV 0.75 1.0)) $not-tv)
-         (cons (CPU MpFormula ((STV 1.0 0.8) $not-tv) $tv) ())))
+         (cons (CPU CTVFormula ($not-tv (CTV (STV 1.0 0.8) (STV 0.0 0.0))) $tv) ())))
    0.2)
 
 !(test
    (premises-expected-confidence
       (cons ((Animal #) (kb MAIN Nil) $prfA $tvA)
-         (cons ((Creature #) (kb MAIN Nil) $prfB $tvB)
-            (cons (CPU InversionFormula ($tvA $tvB (STV 0.8 0.632121)) $iitv)
-               (cons ((Creature #) (kb MAIN Nil) $prfC $tvB) (cons (CPU MpFormula ($iitv $tvB) $tvA) ()))))))
+         (cons (CPU CTVInversionFormula ($tvA (CTV (STV 0.8 0.632121) (STV 0.1 0.632121))) $iitv)
+            (cons ((Creature #) (kb MAIN Nil) $prfC $tvB) (cons (CPU CTVFormula ($tvB $iitv) $tvA) ())))))
    0.5689089)
 
 !(compileadd inverseTotalKb
    (: inverseTotalRule
       (Implication (Premises (InverseTotalA)) (Conclusions (InverseTotalB)))
-      (STV 0.8 0.9)))
+      (CTV (STV 0.8 0.9) (STV 0.1 0.9))))
 
 !(test
    (collapse
@@ -73,13 +77,12 @@
             ($id
                ((InverseTotalA)
                   (inverseTotalKb $ctx $vars)
-                  ((inverted inverseTotalRule with $prfa-est $prfb-est) $prfb-wit)
+                  ((inverted inverseTotalRule with $prfa-est) $prfb-wit)
                   $atv)
                (((InverseTotalA) (inverseTotalKb $ctx $vars) $prfa-est $atv-est)
-                  ((InverseTotalB) (inverseTotalKb $ctx $vars) $prfb-est $btv-est)
-                  (CPU InversionFormula ($atv-est $btv-est (STV 0.8 0.9)) $iitv)
+                  (CPU CTVInversionFormula ($atv-est (CTV (STV 0.8 0.9) (STV 0.1 0.9))) $iitv)
                   ((InverseTotalB) (inverseTotalKb $ctx $vars) $prfb-wit $btv-wit)
-                  (CPU TotalMpConclusionFormula (inverseTotalKb (InverseTotalB) (InverseTotalA) $btv-wit $iitv (STV 0.2 0.2)) $atv)))
+                  (CPU CTVFormula ($btv-wit $iitv) $atv)))
             ok)))
    (ok))
 

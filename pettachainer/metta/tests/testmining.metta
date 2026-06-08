@@ -131,7 +131,7 @@
    (pretty
       (rules
          (((: (kb MAIN ()) p1 (Owns bob dog) (STV 1.0 1.0))
-               (CPU MpFormula ((STV 1.0 1.0) (STV 1.0 0.5)) (STV 1.0 0.5)))
+               (CPU CTVFormula ((STV 1.0 1.0) (CTV (STV 1.0 0.5) (STV 0.5 0.0))) (STV 1.0 0.5)))
             |-
             (: (kb MAIN ()) ((mined_implication (Owns (V 1) dog) (Owns (V 1) cat)) p1) (Owns bob cat) (STV 1.0 0.5)))))
    (: mined_implication ((Implication (Premises (Owns (V 1) dog)) (Conclusions (Owns (V 1) cat))) p1) (Owns bob cat) (STV 1.0 0.5)))
@@ -140,7 +140,7 @@
    (pretty
       (rules
          (((: (kb MAIN ()) p1 (Owns bob dog) (STV 1.0 1.0))
-               (CPU MpFormula ((STV 1.0 1.0) (STV 1.0 0.5)) $tvout))
+               (CPU CTVFormula ((STV 1.0 1.0) (CTV (STV 1.0 0.5) (STV 0.5 0.0))) $tvout))
             |-
             (: (kb MAIN ()) ((mined_implication (Owns (V 1) dog) (Owns (V 1) cat)) p1) (Owns bob cat) $tvout))))
-   (: mined_implication ((Implication (Premises (Owns (V 1) dog)) (Conclusions (Owns (V 1) cat))) p1) (Owns bob cat) (STV 1.0 1.0)))
+   (: mined_implication ((Implication (Premises (Owns (V 1) dog)) (Conclusions (Owns (V 1) cat))) p1) (Owns bob cat) (CTV (STV 1.0 0.5) (STV 0.5 0.0))))

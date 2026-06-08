@@ -13,7 +13,7 @@
       (Implication
          (Premises (Seed $p))
          (Conclusions (PairFact $p)))
-      (STV 1.0 1.0)))
+      (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
 
 !(test
    (collapse
@@ -49,6 +49,6 @@
                ->
                $counts)
             $tv)))
-   ((: (rule-proof foldall (rule-proof seedRule seed2) (rule-proof seedRule seed1))
-       (FoldAll (PairFact $_p) $_p (PairCounts ()) DistValueCountAcc -> (PairCounts (((Pair beta 2) 1.0) ((Pair alpha 1) 1.0))))
+   ((: (rule-proof foldall (rule-proof seedRule seed1) (rule-proof seedRule seed2))
+       (FoldAll (PairFact $_p) $_p (PairCounts ()) DistValueCountAcc -> (PairCounts (((Pair alpha 1) 1.0) ((Pair beta 2) 1.0))))
        (STV 1.0 1.0))))

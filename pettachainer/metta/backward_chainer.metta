@@ -303,6 +303,15 @@
        ($agenda1 (fold-flat (expand-direct-goal-step $gid $goal) $agenda $results)))
       (expand-rule-goal-heap $agenda1 $gid $goal)))
 
+(= (inject-compiled-query-adds (compiled-query $_goal $adds)) (inject-compiled-adds $adds))
+
+(= (inject-implication-subgoal-query-adds ($type ($kbid MAIN Nil) $prf $tv))
+   (if (= $type (Implication (cons Premises $_premises) (cons Conclusions $_conclusions)))
+      (let $compiled-queries (collapse (mm2compileQuery $kbid (: $prf $type $tv)))
+         (foreach-flat inject-compiled-query-adds $compiled-queries))
+      ()))
+(= (inject-implication-subgoal-query-adds $_goal) ())
+
 (= (open-rule-goal? $goal)
    (if (= $goal ($type $_kb $_prf $_tv))
       (or (not (== (extract-vars $type) ())) (contains-hash? $type))
@@ -410,6 +419,7 @@
        ($_expand
           (progn (remove-atom &goal ($gid $depth $goal $expanded $pending))
              (chainer-add-atom &goal ($gid $depth $goal true $pending))))
+       ($_query-adds (if (> $depth 0) (inject-implication-subgoal-query-adds $goal) ()))
        ($nagenda0
           (if (and (= $goal (CPU $fun $_args $_res)) (or (== $fun FoldAllCompiled) (== $fun GroupedFoldAllCompiled)))
              (spawn-aggregate-goal-heap $agenda $score $gid $goal)

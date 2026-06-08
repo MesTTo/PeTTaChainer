@@ -8,11 +8,11 @@
    (TotalEvidenceTvs (TotalEvidenceOr $pos-tv $tv) $neg-tv))
 (= (TotalEvidenceAcc (TotalEvidenceTvs $pos-tv $neg-tv) (EvidenceCase neg $tv))
    (TotalEvidenceTvs $pos-tv (TotalEvidenceOr $neg-tv $tv)))
-(= (TotalEvidenceMpFormula $atv $evidence-tvs)
+(= (TotalEvidenceCTVFormula $atv $evidence-tvs)
    (if (= $evidence-tvs (TotalEvidenceTvs none none))
-      (empty)
-      (let (TotalEvidenceTvs $pos-tv $neg-tv) $evidence-tvs
-         (TotalMpFormula $atv (TotalEvidenceTv $pos-tv) (TotalEvidenceTv $neg-tv)))))
+	      (empty)
+	      (let (TotalEvidenceTvs $pos-tv $neg-tv) $evidence-tvs
+	         (CTVFormula $atv (CTV (TotalEvidenceTv $pos-tv) (TotalEvidenceTv $neg-tv))))))
 
 !(compileadd kb (: ta (Tall alice) (STV 0.9 0.5)))
 !(compileadd kb (: fa (Female alice) (STV 0.9 0.5)))
@@ -66,7 +66,7 @@
               identity
               result-tv)
            $evidence-tvs)
-        (CPU TotalEvidenceMpFormula ($atv $evidence-tvs) $btv))
+        (CPU TotalEvidenceCTVFormula ($atv $evidence-tvs) $btv))
        |-
        (($p2 $y)
           (kb $ctx $vars)

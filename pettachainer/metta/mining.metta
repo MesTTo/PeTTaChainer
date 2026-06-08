@@ -80,7 +80,7 @@
            ($s (if (> $sum 0.0) (/ $alpha $sum) 0.5))
            ($c (/ $sum (+ $sum 800.0)))
            ($type (Implication (Premises $prem) (Conclusions $conc)))
-           ($stmt (: (mined_implication $premk $conck) $type (STV $s $c)))
+           ($stmt (: (mined_implication $premk $conck) $type (CTV (STV $s $c) (STV 0.5 0.0))))
            ($_ (clear-mined-implication-rules $kb $premk $conck)))
          (let $_ (collapse (compileadd $kb $stmt)) ()))))
 
