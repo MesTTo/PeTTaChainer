@@ -29,7 +29,7 @@
    (: d_a (Implication (Premises (Dog)) (Conclusions (Animal))) (STV 0.8 0.6)))
 
 !(test (collapse (query 100 totalMpFallbackKb (: $prf (Animal) $tv)))
-   ((: (rule-proof d_a d) (Animal) (STV 0.4 0.3))))
+   ((: (rule-proof d_a d) (Animal) (STV 0.5 0.4))))
 
 !(compileadd totalMpNegOnlyKb (: d (Dog) (STV 0.5 1.0)))
 
@@ -37,4 +37,4 @@
    (: nd_a (Implication (Premises (Not (Dog))) (Conclusions (Animal))) (STV 0.8 0.6)))
 
 !(test (collapse (query 100 totalMpNegOnlyKb (: $prf (Animal) $tv)))
-   ((: (rule-proof nd_a (negated d)) (Animal) (STV 0.4 0.3))))
+   ((: (rule-proof nd_a (negated d)) (Animal) (STV 0.5 0.4))))

@@ -97,7 +97,7 @@
                           (ctx proof $_ctx)
                           (rule-proof disjunction $_left $_right)))
                     (Implication (Premises (Tall $x)) (Conclusions (Female $x)))
-                    (STV 0.9639 0.48195))
+                    (STV 0.97112 0.48917))
                (superpose
                   (collapse
                      (query 100 openVariableConclusionImplicationKb
@@ -134,7 +134,7 @@
          (collapse
             (let (: $_proof
                     (Implication (Premises (Female $x)) (Conclusions (Tall $x)))
-                    (STV 0.9639 0.48195))
+                    (STV 0.97112 0.48917))
                (superpose
                   (collapse
                      (query 100 openVariableConclusionImplicationKb
@@ -152,7 +152,7 @@
 
 !(test
    (collapse (query 100 existentialDisjunctionKb (: $prf (T) $tv)))
-   ((: (rule-proof pToT (rule-proof disjunction pa pb)) (T) (STV 0.9199999999999999 0.45999999999999996))))
+   ((: (rule-proof pToT (rule-proof disjunction pa pb)) (T) (STV 0.9359999999999999 0.476))))
 
 !(compileadd composeKb (: a0 (A) (STV 1.0 1.0)))
 

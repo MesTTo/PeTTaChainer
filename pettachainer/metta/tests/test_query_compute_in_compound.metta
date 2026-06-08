@@ -28,4 +28,4 @@
    (collapse (query 20 queryNotCompoundKb (: $prf (And (Not (Tall alice)) (Female alice)) $tv)))
    ((: (rule-proof query-compound (rule-proof conjunction (negated tallAlice) femaleAlice))
        (And (Not (Tall alice)) (Female alice))
-       (STV 0.08999999999999998 0.04499999999999999))))
+       (STV 0.272 0.227))))
