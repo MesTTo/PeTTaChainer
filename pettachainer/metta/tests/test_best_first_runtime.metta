@@ -48,7 +48,7 @@
 !(test (collapse (query 2 priorityStrengthKb (: $prf (StrengthPriorityGoal) $tv))) ())
 
 !(test (collapse (query 3 priorityStrengthKb (: $prf (StrengthPriorityGoal) $tv)))
-   ((: (rule-proof strongRule strongInput) (StrengthPriorityGoal) (STV 0.8 0.8))))
+   ((: (rule-proof strongRule strongInput) (StrengthPriorityGoal) (STV 0.8400000000000001 0.8400000000000001))))
 
 !(compileadd chainedPriorityKb (: weakEvidence (WeakEvidence) (STV 0.2 1.0)))
 
@@ -68,7 +68,7 @@
 !(test (collapse (query 5 chainedPriorityKb (: $prf (ChainedPriorityGoal) $tv)))
    ((: (rule-proof aToGoal (rule-proof strongToA strongEvidence))
        (ChainedPriorityGoal)
-       (STV 0.8 0.6400000000000001))))
+       (STV 0.8720000000000001 0.7376000000000001))))
 
 !(compileadd priorityNegKb (: highInput (HighInput) (STV 0.9 1.0)))
 
@@ -85,7 +85,7 @@
 !(test (collapse (query 4 priorityNegKb (: $prf (NegPriorityGoal) $tv))) ())
 
 !(test (collapse (query 5 priorityNegKb (: $prf (NegPriorityGoal) $tv)))
-   ((: (rule-proof lowNegRule (negated lowInput)) (NegPriorityGoal) (STV 0.9 0.9))))
+   ((: (rule-proof lowNegRule (negated lowInput)) (NegPriorityGoal) (STV 0.92 0.92))))
 
 !(compileadd incumbentPriorityKb (: directB (IncumbentB) (STV 1.0 0.9)))
 

@@ -61,6 +61,28 @@
                (cons ((Creature #) (kb MAIN Nil) $prfC $tvB) (cons (CPU MpFormula ($iitv $tvB) $tvA) ()))))))
    0.5689089)
 
+!(compileadd inverseTotalKb
+   (: inverseTotalRule
+      (Implication (Premises (InverseTotalA)) (Conclusions (InverseTotalB)))
+      (STV 0.8 0.9)))
+
+!(test
+   (collapse
+      (once
+         (match rules
+            ($id
+               ((InverseTotalA)
+                  (inverseTotalKb $ctx $vars)
+                  ((inverted inverseTotalRule with $prfa-est $prfb-est) $prfb-wit)
+                  $atv)
+               (((InverseTotalA) (inverseTotalKb $ctx $vars) $prfa-est $atv-est)
+                  ((InverseTotalB) (inverseTotalKb $ctx $vars) $prfb-est $btv-est)
+                  (CPU InversionFormula ($atv-est $btv-est (STV 0.8 0.9)) $iitv)
+                  ((InverseTotalB) (inverseTotalKb $ctx $vars) $prfb-wit $btv-wit)
+                  (CPU TotalMpConclusionFormula (inverseTotalKb (InverseTotalB) (InverseTotalA) $btv-wit $iitv (STV 0.2 0.2)) $atv)))
+            ok)))
+   (ok))
+
 !(test
    (let*
       (($heap0 (empty_heap))

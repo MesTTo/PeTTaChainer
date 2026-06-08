@@ -568,7 +568,7 @@
             (($proof-token (implication-proof-token $proofs))
               ($allargs
                  (append $execs
-                    ((CPU TotalMpConclusionFormula ($source-kb $pair-a $b $atv $tv (STV 0.0 0.0)) $btv)))))
+                    ((CPU TotalMpConclusionFormula ($source-kb $pair-a $b $atv $tv (STV 0.2 0.2)) $btv)))))
             ($allargs |- ((: $shape-kb ($prf $proof-token) $b $btv)))))
       (if (is-var $b) (empty) (compile-outputs (: $adapter-kb ($prf $prfb) $b $btv2)))
       (if (is-var $a) (empty) (compile-adapter-chain plain (: $adapter-kb $prfa $a $atv))))))
@@ -580,7 +580,7 @@
       (((: ($kb $ctx $vars) $prfa_est $a1 $atv) (: ($kb $ctx $vars) $prfb_est $b1 $btv_est)
             (CPU InversionFormula ($atv $btv_est $itv) $iitv)
             (: ($kb $ctx $vars) $prfb_wit $b $btv_wit)
-            (CPU MpFormula ($iitv $btv_wit) $atv))
+            (CPU TotalMpConclusionFormula ($kb $b $a $btv_wit $iitv (STV 0.2 0.2)) $atv))
          |-
          ((: ($kb $ctx $vars) ((inverted $prf with $prfa_est $prfb_est) $prfb_wit) $a $atv)))))
 
