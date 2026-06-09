@@ -21,14 +21,14 @@
 !(test
    (query 60 implicationPremiseKb
       (: $prf (Implication (Premises (A)) (Conclusions (B)))
-         (CTV (STV 1.0 1.0) (STV 0.5 0.0))))
-   (: (rule-proof rule-proof total-implication (rule-proof a_b (ctx proof 0)) unknown)
+         (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
+   (: (total-implication (a_b (ctx proof 0)) (a_b (ctx proof 1)))
       (Implication (Premises (A)) (Conclusions (B)))
-      (CTV (STV 1.0 1.0) (STV 0.5 0.0))))
+      (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
 
 !(test
    (query 60 implicationPremiseKb (: $prf (C) $tv))
-   (: (rule-proof ab_c (rule-proof rule-proof total-implication (rule-proof a_b (ctx proof 2)) unknown))
+   (: (ab_c (total-implication (a_b (ctx proof 2)) (a_b (ctx proof 3))))
       (C)
       (STV 1.0 1.0)))
 
@@ -39,9 +39,9 @@
             (Premises (Not (Dog)))
             (Conclusions (Dog)))
          $tv))
-   (: (rule-proof rule-proof total-implication (ctx proof 4) unknown)
+   (: (total-implication (ctx proof 4) (ctx proof 5))
       (Implication (Premises (Not (Dog))) (Conclusions (Dog)))
-      (CTV (STV 0.0 1.0) (STV 0.5 0.0))))
+      (CTV (STV 0.0 1.0) (STV 1.0 1.0))))
 
 !(test
    (query 60 implicationPremiseKb
@@ -49,10 +49,10 @@
          (Implication
             (Premises (Not (Dog)))
             (Conclusions (Not (Dog))))
-         (CTV (STV 1.0 1.0) (STV 0.5 0.0))))
-   (: (rule-proof rule-proof total-implication (rule-proof conjunction (negated (ctx proof 6))) unknown)
+         (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
+   (: (total-implication (negated (ctx proof 6)) (negated (ctx proof 7)))
       (Implication (Premises (Not (Dog))) (Conclusions (Not (Dog))))
-      (CTV (STV 1.0 1.0) (STV 0.5 0.0))))
+      (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
 
 !(compileadd multiPremiseImplicationQueryKb
    (: ab_c
@@ -67,11 +67,11 @@
 !(test
    (query 60 multiPremiseImplicationQueryKb
       (: $prf (Implication (Premises (A) (B)) (Conclusions (C))) $tv))
-   (: (rule-proof rule-proof total-implication
-        (rule-proof ab_c (rule-proof conjunction (ctx proof 8) (ctx proof 8 1)))
-        unknown)
+   (: (total-implication
+        (ab_c (conjunction (ctx proof 8) (ctx proof 8 1)))
+        (ab_c (conjunction (ctx proof 9) (ctx proof 9 1))))
       (Implication (Premises (A) (B)) (Conclusions (C)))
-      (CTV (STV 1.0 1.0) (STV 0.5 0.0))))
+      (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
 
 !(test
    (query 60 implicationPremiseKb
@@ -82,13 +82,13 @@
                (A))
             (Conclusions (B)))
          $tv))
-   (: (rule-proof rule-proof total-implication (rule-proof a_b (ctx proof 10 1)) unknown)
+   (: (total-implication (a_b (ctx proof 10 1)) (a_b (ctx proof 11 1)))
       (Implication
          (Premises
             (Implication (Premises (A)) (Conclusions (B)))
             (A))
          (Conclusions (B)))
-      (CTV (STV 1.0 1.0) (STV 0.5 0.0))))
+      (CTV (STV 1.0 1.0) (STV 1.0 1.0))))
 
 !(set-context-polymorphic-facts kbRelativeImplicationQueryKb true)
 
@@ -107,12 +107,12 @@
 !(test
    (query 60 kbRelativeImplicationQueryKb
       (: $prf (Implication (Premises (A)) (Conclusions (C)))
-         (CTV (STV 1.0 1.0) (STV 0.5 0.0))))
-   (: (rule-proof rule-proof total-implication
-        (rule-proof ab_c (rule-proof conjunction (ctx proof 12) b))
-        unknown)
+         (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
+   (: (total-implication
+        (ab_c (conjunction (ctx proof 12) b))
+        (ab_c (conjunction (ctx proof 13) b)))
       (Implication (Premises (A)) (Conclusions (C)))
-      (CTV (STV 1.0 1.0) (STV 0.5 0.0))))
+      (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
 
 !(test (query 10 kbRelativeImplicationQueryKb (: $prf (B) $tv))
    (: b (B) (STV 1.0 1.0)))
@@ -136,7 +136,7 @@
       (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
 
 !(test (query 30 biImplicationKb (: $prf (B) $tv))
-   (: (rule-proof (bi-forward a_iff_b) a) (B) (STV 1.0 1.0)))
+   (: ((bi-forward a_iff_b) a) (B) (STV 1.0 1.0)))
 
 !(compileadd biImplicationKb (: b (B2) (STV 1.0 1.0)))
 
@@ -148,7 +148,7 @@
       (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
 
 !(test (query 30 biImplicationKb (: $prf (A2) $tv))
-   (: (rule-proof (bi-backward a2_iff_b2) b) (A2) (STV 1.0 1.0)))
+   (: ((bi-backward a2_iff_b2) b) (A2) (STV 1.0 1.0)))
 
 !(test
    (query 60 biImplicationKb
@@ -157,8 +157,8 @@
             (Premises (A))
             (Conclusions (B)))
          $tv))
-   (: (rule-proof rule-proof bidirectional
-        (rule-proof (bi-forward a_iff_b) (ctx proof 14))
-        (rule-proof (bi-backward a_iff_b) (ctx proof 15)))
+   (: (bidirectional
+        ((bi-forward a_iff_b) (ctx proof 14))
+        ((bi-backward a_iff_b) (ctx proof 15)))
       (BiImplication (Premises (A)) (Conclusions (B)))
       (STV 1.0 1.0)))

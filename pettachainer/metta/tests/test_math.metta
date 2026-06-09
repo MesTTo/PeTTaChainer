@@ -27,6 +27,6 @@
 
 !(test
    (query 20 mathkb (: $prf (Provable (PropQ)) $tv))
-   (: (rule-proof mp (rule-proof conjunction given-imp given-p))
+   (: (mp (conjunction given-imp given-p))
       (Provable (PropQ))
       (STV 1.0 1.0)))

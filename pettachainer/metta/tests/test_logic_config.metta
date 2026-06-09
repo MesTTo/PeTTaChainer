@@ -17,14 +17,14 @@
 
 !(test
    (query 20 plnProjectionKb (: $prf (B) $tv))
-   (: (rule-proof rule-proof (proj 1 ab) a) (B) (STV 1.0 0.9)))
+   (: ((proj 1 ab) a) (B) (STV 1.0 0.9)))
 
 !(compileadd plnOrProjectionKb (: ab (Or (A) (B)) (STV 1.0 0.9)))
 !(compileadd plnOrProjectionKb (: a (A) (STV 1.0 1.0)))
 
 !(test
    (query 20 plnOrProjectionKb (: $prf (B) $tv))
-   (: (rule-proof rule-proof (proj 1 ab) a) (B) (STV 0.0 0.0)))
+   (: ((proj 1 ab) a) (B) (STV 0.0 0.0)))
 
 !(import! &self logic_configs/predicate_logic)
 
@@ -32,7 +32,7 @@
 
 !(test
    (query 20 predicateLogicKb (: $prf (Or (A) (B)) $tv))
-   (: (rule-proof rule-proof Orintroduction a) (Or (A) (B)) (STV 1.0 1.0)))
+   (: (Orintroduction a) (Or (A) (B)) (STV 1.0 1.0)))
 
 !(import! &self logic_configs/pln)
 
@@ -50,7 +50,7 @@
 
 !(test
    (query 20 customEitherKb (: $prf (Either (A) (B)) $tv))
-   (: (rule-proof rule-proof Eitherintroduction a) (Either (A) (B)) (STV 1.0 1.0)))
+   (: (Eitherintroduction a) (Either (A) (B)) (STV 1.0 1.0)))
 
 !(clear-logic-config)
 !(set-logic-name NoOrLogic)

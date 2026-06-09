@@ -181,7 +181,6 @@
 (= (proof-term-leaf-head? $head) (is-member $head (() fact-ev CPU STV CTV)))
 
 (= (proof-term-children-mode $_mode (@ $prf (head conjunction))) (cdr-atom $prf))
-(= (proof-term-children-mode $_mode (@ $prf (head rule-proof))) (cdr-atom (cdr-atom $prf)))
 (= (proof-term-children-mode proof-walk-in-kb (@ $prf (head $head)))
    (if (proof-term-leaf-head? $head) () (cdr-atom $prf)))
 (= (proof-term-children-mode $_mode $_prf) ())

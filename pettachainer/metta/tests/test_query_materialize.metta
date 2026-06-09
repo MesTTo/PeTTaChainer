@@ -8,7 +8,7 @@
 
 !(test
    (query 4 materializeKb (: $p (Goal) $tv))
-   (: (rule-proof r2 (rule-proof r1 a0)) (Goal) (STV 1.0 1.0)))
+   (: (r2 (r1 a0)) (Goal) (STV 1.0 1.0)))
 
 !(test
    (collapse (match &kb ((B) (materializeKb MAIN Nil) $_prf $_tv) true))
@@ -20,7 +20,7 @@
 
 !(test
    (query-materialize 4 materializeKb (: $p (Goal) $tv))
-   (: (rule-proof r2 (rule-proof r1 a0)) (Goal) (STV 1.0 1.0)))
+   (: (r2 (r1 a0)) (Goal) (STV 1.0 1.0)))
 
 !(test
    (not (== (collapse (match &kb ((B) (materializeKb MAIN Nil) $_prf $_tv) true)) ()))
@@ -32,8 +32,8 @@
 
 !(test
    (query 1 materializeKb (: $p (B) $tv))
-   (: (rule-proof r1 a0) (B) (STV 1.0 1.0)))
+   (: (r1 a0) (B) (STV 1.0 1.0)))
 
 !(test
    (query 1 materializeKb (: $p (Goal) $tv))
-   (: (rule-proof r2 (rule-proof r1 a0)) (Goal) (STV 1.0 1.0)))
+   (: (r2 (r1 a0)) (Goal) (STV 1.0 1.0)))

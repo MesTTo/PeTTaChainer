@@ -29,16 +29,16 @@
 
 !(test
    (query 100 kb (: $prf (XYZSample $sample) $tv))
-   ((: (rule-proof sampleRule (rule-proof conjunction fx7 fy7 cpu fz8))
+   ((: (sampleRule (conjunction fx7 fy7 cpu fz8))
        (XYZSample (Pair (XY 10.0 2.0) 49.0))
        (STV 1.0 0.9))
-    (: (rule-proof sampleRule (rule-proof conjunction fx5 fy5 cpu fz6))
+    (: (sampleRule (conjunction fx5 fy5 cpu fz6))
        (XYZSample (Pair (XY 10.0 100.0) 19.0))
        (STV 1.0 0.9))
-    (: (rule-proof sampleRule (rule-proof conjunction fx3 fy3 cpu fz4))
+    (: (sampleRule (conjunction fx3 fy3 cpu fz4))
        (XYZSample (Pair (XY 10.0 100.0) 21.0))
        (STV 1.0 0.9))
-    (: (rule-proof sampleRule (rule-proof conjunction fx1 fy1 cpu fz2))
+    (: (sampleRule (conjunction fx1 fy1 cpu fz2))
        (XYZSample (Pair (XY 10.0 100.0) 20.0))
        (STV 1.0 0.9))))
 

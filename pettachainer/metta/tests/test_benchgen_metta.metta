@@ -61,9 +61,8 @@
    (let (: $prf (NoiseDeadEnd benchNoiseMix 4) $_tv)
       (query 100 kb (: $prf (NoiseDeadEnd benchNoiseMix 4) $tv))
       (: $prf (NoiseDeadEnd benchNoiseMix 4) random-tv))
-   (: (rule-proof
-        (bench-noise-forward-rule benchNoiseMix 4 2)
-        (rule-proof (bench-noise-forward-rule benchNoiseMix 4 1) (bench-base-fact benchNoiseMix 1 4)))
+   (: ((bench-noise-forward-rule benchNoiseMix 4 2)
+        ((bench-noise-forward-rule benchNoiseMix 4 1) (bench-base-fact benchNoiseMix 1 4)))
       (NoiseDeadEnd benchNoiseMix 4)
       random-tv))
 
@@ -71,9 +70,8 @@
    (let (: $prf (NoiseDeadEnd benchNoiseMix 5) $_tv)
       (query 100 kb (: $prf (NoiseDeadEnd benchNoiseMix 5) $tv))
       (: $prf (NoiseDeadEnd benchNoiseMix 5) random-tv))
-   (: (rule-proof
-        (bench-noise-forward-rule benchNoiseMix 5 2)
-        (rule-proof (bench-noise-forward-rule benchNoiseMix 5 1) (bench-base-fact benchNoiseMix 1 1)))
+   (: ((bench-noise-forward-rule benchNoiseMix 5 2)
+        ((bench-noise-forward-rule benchNoiseMix 5 1) (bench-base-fact benchNoiseMix 1 1)))
       (NoiseDeadEnd benchNoiseMix 5)
       random-tv))
 

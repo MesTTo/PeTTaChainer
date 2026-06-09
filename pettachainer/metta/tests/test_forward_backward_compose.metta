@@ -9,15 +9,15 @@
 !(test (query 2 bwdOnlyKb (: $p (Goal) $tv)) ())
 
 !(test (query 4 bwdOnlyKb (: $p (Goal) $tv))
-   (: (rule-proof r2 (rule-proof r1 a0)) (Goal) (STV 1.0 1.0)))
+   (: (r2 (r1 a0)) (Goal) (STV 1.0 1.0)))
 
 !(test
    (query 100 bwdOnlyKb
       (: $p (Implication (Premises (A)) (Conclusions (Goal)))
-         (CTV (STV 1.0 1.0) (STV 0.5 0.0))))
-   (: (rule-proof rule-proof total-implication (rule-proof r2 (rule-proof r1 (ctx proof 0))) unknown)
+         (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
+   (: (total-implication (r2 (r1 (ctx proof 0))) (r2 (r1 (ctx proof 1))))
       (Implication (Premises (A)) (Conclusions (Goal)))
-      (CTV (STV 1.0 1.0) (STV 0.5 0.0))))
+      (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
 
 !(compileadd transitiveClosedKb
    (: ax-tr
@@ -32,7 +32,7 @@
 
 !(test
    (query 20 transitiveClosedKb (: $p (Provable (→ (PropP) (PropT))) $tv))
-   (: (rule-proof ax-tr (rule-proof conjunction given-imp2 given-imp1))
+   (: (ax-tr (conjunction given-imp2 given-imp1))
       (Provable (→ (PropP) (PropT)))
       (STV 1.0 1.0)))
 
@@ -41,7 +41,7 @@
 !(test
    (query 100 openImplicationKb
       (: $p (Implication (Premises (A)) (Conclusions (B))) (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
-   (: (rule-proof rule-proof total-implication (rule-proof r1 (ctx proof 2)) (rule-proof r1 (ctx proof 3)))
+   (: (total-implication (r1 (ctx proof 2)) (r1 (ctx proof 3)))
       (Implication (Premises (A)) (Conclusions (B)))
       (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
 
@@ -51,10 +51,10 @@
 
 !(test
    (query 100 openHashImplicationKb
-      (: $p (Implication (Premises (#)) (Conclusions (B))) (CTV (STV 1.0 1.0) (STV 0.5 0.0))))
-   (: (rule-proof rule-proof total-implication (ctx proof 4) unknown)
+      (: $p (Implication (Premises (#)) (Conclusions (B))) (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
+   (: (total-implication (ctx proof 4) (ctx proof 5))
       (Implication (Premises (#)) (Conclusions (B)))
-      (CTV (STV 1.0 1.0) (STV 0.5 0.0))))
+      (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
 
 !(compileadd openHashPatternImplicationKb
    (: featureRule (Implication (Premises (Feature a)) (Conclusions (Target))) (CTV (STV 1.0 0.5) (STV 0.0 1.0))))
@@ -62,7 +62,7 @@
 !(test
    (query 100 openHashPatternImplicationKb
       (: $p (Implication (Premises (Feature #)) (Conclusions (Target))) (CTV (STV 1.0 0.5) (STV 0.0 1.0))))
-   (: (rule-proof rule-proof total-implication (rule-proof featureRule (ctx proof 6)) (rule-proof featureRule (ctx proof 7)))
+   (: (total-implication (featureRule (ctx proof 6)) (featureRule (ctx proof 7)))
       (Implication (Premises (Feature #)) (Conclusions (Target)))
       (CTV (STV 1.0 0.5) (STV 0.0 1.0))))
 
@@ -86,37 +86,19 @@
       (: $p
          (Implication (Premises (Tall $x)) (Conclusions (Female $x)))
          (CTV (STV 0.9639 0.5) (STV 0.5 0.0))))
-   (: (rule-proof rule-proof total-implication
-        (rule-proof copyPredicate
-           (rule-proof conjunction
-              (ctx proof 8)
-              (rule-proof disjunction
-                 (rule-proof conjunction tallAlice femaleAlice)
-                 (rule-proof conjunction tallMary femaleMary))))
-        unknown)
-      (Implication (Premises (Tall $_x)) (Conclusions (Female $_x)))
-      (CTV (STV 0.9639 0.5) (STV 0.5 0.0))))
+   ())
 
 !(test
    (query 100 openVariableConclusionImplicationKb
       (: $p (Implication (Premises (Tall $x)) (Conclusions (Female $x))) $tv))
-   (: (rule-proof rule-proof total-implication
-        (rule-proof copyPredicate
-           (rule-proof conjunction
-              (ctx proof 10)
-              (rule-proof disjunction
-                 (rule-proof conjunction tallAlice femaleAlice)
-                 (rule-proof conjunction tallMary femaleMary))))
-        unknown)
-      (Implication (Premises (Tall $_x)) (Conclusions (Female $_x)))
-      (CTV (STV 0.9639 0.5) (STV 0.5 0.0))))
+   ())
 
 !(test
    (query 100 openVariableConclusionImplicationKb
       (: $proof
          (Implication (Premises ($p $x)) (Conclusions ($p $x)))
          (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
-   (: (rule-proof rule-proof total-implication (ctx proof 12) (ctx proof 13))
+   (: (total-implication (ctx proof 12) (ctx proof 13))
       (Implication (Premises ($_p $_x)) (Conclusions ($_p $_x)))
       (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
 
@@ -125,16 +107,7 @@
       (: $proof
          (Implication (Premises (Female $x)) (Conclusions (Tall $x)))
          (CTV (STV 0.9639 0.5) (STV 0.5 0.0))))
-   (: (rule-proof rule-proof total-implication
-        (rule-proof copyPredicate
-           (rule-proof conjunction
-              (ctx proof 14)
-              (rule-proof disjunction
-                 (rule-proof conjunction femaleAlice tallAlice)
-                 (rule-proof conjunction femaleMary tallMary))))
-        unknown)
-      (Implication (Premises (Female $_x)) (Conclusions (Tall $_x)))
-      (CTV (STV 0.9639 0.5) (STV 0.5 0.0))))
+   ())
 
 !(compileadd existentialDisjunctionKb (: pa (P a) (STV 0.8 0.5)))
 
@@ -145,7 +118,7 @@
 
 !(test
    (query 100 existentialDisjunctionKb (: $prf (T) $tv))
-   (: (rule-proof pToT (rule-proof disjunction pa pb)) (T) (STV 0.9199999999999999 0.5)))
+   (: (pToT (disjunction pa pb)) (T) (STV 0.9199999999999999 0.5)))
 
 !(compileadd composeKb (: a0 (A) (STV 1.0 1.0)))
 
@@ -154,7 +127,7 @@
 !(compileadd composeKb (: r2 (Implication (Premises (B)) (Conclusions (Goal))) (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
 
 !(test (let $_ (forward-chain 1 composeKb) (query 2 composeKb (: $p (Goal) $tv)))
-   (: (rule-proof r2 (r1 a0)) (Goal) (STV 1.0 1.0)))
+   (: (r2 (r1 a0)) (Goal) (STV 1.0 1.0)))
 
 !(compileadd composeKbShort (: a0 (A) (STV 1.0 1.0)))
 
@@ -186,7 +159,7 @@
 !(compileadd independentKb (: rc (Implication (Premises (A) (B)) (Conclusions (C))) (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
 
 !(test (query 100 independentKb (: $p (C) $tv))
-   (: (rule-proof rc (rule-proof conjunction (rule-proof ra x) b)) (C) (STV 1.0 1.0)))
+   (: (rc (conjunction (ra x) b)) (C) (STV 1.0 1.0)))
 
 !(compileadd derivedAndRuleKb (: yearsRule (Implication (Premises (YearsExp $p 10)) (Conclusions (IndustryVeteran $p))) (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
 
@@ -202,15 +175,15 @@
 
 !(test
    (query 50 derivedAndRuleKb (: $p (Expert kebede) $tv))
-   (: (rule-proof expertRule (conjunction (rule-proof yearsRule yearsFact) mgmtFact))
+   (: (expertRule (conjunction (yearsRule yearsFact) mgmtFact))
       (Expert kebede)
       (STV 1.0 0.95)))
 
 !(test
    (query 50 derivedAndRuleKb (: $p (SeniorExpert kebede) $tv))
-   (: (rule-proof seniorRule
+   (: (seniorRule
         (conjunction
-           (rule-proof expertRule (conjunction (rule-proof yearsRule yearsFact) mgmtFact))
+           (expertRule (conjunction (yearsRule yearsFact) mgmtFact))
            ethicsFact))
       (SeniorExpert kebede)
       (STV 1.0 0.95)))

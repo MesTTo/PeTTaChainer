@@ -12,11 +12,11 @@
 
 !(test
    (query 10 kb (: $prf (SwitchGoal) $tv))
-   (: (rule-proof ruleStable baseFact) (SwitchGoal) (STV 1.0 0.7)))
+   (: (ruleStable baseFact) (SwitchGoal) (STV 1.0 0.7)))
 
 !(test
    (query 30 kb
-      (: (rule-proof ruleHighThenDrop (conjunction weakFact baseFact))
+      (: (ruleHighThenDrop (conjunction weakFact baseFact))
          (SwitchGoal)
          (STV 1.0 0.1)))
    ())
@@ -24,13 +24,13 @@
 !(test (query 0 kb (: $prf (SwitchGoal) $tv)) ())
 
 !(test (query 4 kb (: $prf (SwitchGoal) $tv))
-   (: (rule-proof ruleStable baseFact) (SwitchGoal) (STV 1.0 0.7)))
+   (: (ruleStable baseFact) (SwitchGoal) (STV 1.0 0.7)))
 
 !(test (query 7 kb (: $prf (SwitchGoal) $tv))
-   (: (rule-proof ruleStable baseFact) (SwitchGoal) (STV 1.0 0.7)))
+   (: (ruleStable baseFact) (SwitchGoal) (STV 1.0 0.7)))
 
 !(test (query 100 kb (: $prf (SwitchGoal) $tv))
-   (: (rule-proof ruleStable baseFact) (SwitchGoal) (STV 1.0 0.7)))
+   (: (ruleStable baseFact) (SwitchGoal) (STV 1.0 0.7)))
 
 !(compileadd priorityStrengthKb (: weakInput (WeakInput) (STV 0.2 1.0)))
 
@@ -43,10 +43,10 @@
    (: strongRule (Implication (Premises (StrongInput)) (Conclusions (StrengthPriorityGoal))) (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
 
 !(test (query 2 priorityStrengthKb (: $prf (StrengthPriorityGoal) $tv))
-   (: (rule-proof strongRule strongInput) (StrengthPriorityGoal) (STV 0.8 1.0)))
+   (: (strongRule strongInput) (StrengthPriorityGoal) (STV 0.8 1.0)))
 
 !(test (query 3 priorityStrengthKb (: $prf (StrengthPriorityGoal) $tv))
-   (: (rule-proof strongRule strongInput) (StrengthPriorityGoal) (STV 0.8 1.0)))
+   (: (strongRule strongInput) (StrengthPriorityGoal) (STV 0.8 1.0)))
 
 !(compileadd chainedPriorityKb (: weakEvidence (WeakEvidence) (STV 0.2 1.0)))
 
@@ -62,12 +62,12 @@
    (: aToGoal (Implication (Premises (AForPriority)) (Conclusions (ChainedPriorityGoal))) (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
 
 !(test (query 4 chainedPriorityKb (: $prf (ChainedPriorityGoal) $tv))
-   (: (rule-proof aToGoal (rule-proof strongToA strongEvidence))
+   (: (aToGoal (strongToA strongEvidence))
       (ChainedPriorityGoal)
       (STV 0.8 1.0)))
 
 !(test (query 5 chainedPriorityKb (: $prf (ChainedPriorityGoal) $tv))
-   (: (rule-proof aToGoal (rule-proof strongToA strongEvidence))
+   (: (aToGoal (strongToA strongEvidence))
       (ChainedPriorityGoal)
       (STV 0.8 1.0)))
 
@@ -82,13 +82,13 @@
    (: lowNegRule (Implication (Premises (Not (LowInput))) (Conclusions (NegPriorityGoal))) (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
 
 !(test (query 3 priorityNegKb (: $prf (NegPriorityGoal) $tv))
-   (: (rule-proof lowNegRule (negated lowInput)) (NegPriorityGoal) (STV 0.9 1.0)))
+   (: (lowNegRule (negated lowInput)) (NegPriorityGoal) (STV 0.9 1.0)))
 
 !(test (query 4 priorityNegKb (: $prf (NegPriorityGoal) $tv))
-   (: (rule-proof lowNegRule (negated lowInput)) (NegPriorityGoal) (STV 0.9 1.0)))
+   (: (lowNegRule (negated lowInput)) (NegPriorityGoal) (STV 0.9 1.0)))
 
 !(test (query 5 priorityNegKb (: $prf (NegPriorityGoal) $tv))
-   (: (rule-proof lowNegRule (negated lowInput)) (NegPriorityGoal) (STV 0.9 1.0)))
+   (: (lowNegRule (negated lowInput)) (NegPriorityGoal) (STV 0.9 1.0)))
 
 !(compileadd incumbentPriorityKb (: directB (IncumbentB) (STV 1.0 0.9)))
 
@@ -117,18 +117,18 @@
       (CTV (STV 1.0 0.7) (STV 0.0 1.0))))
 
 !(test (query 2 incumbentPriorityKb (: $prf (IncumbentGoal) $tv))
-   (: (rule-proof bToGoal directB) (IncumbentGoal) (STV 1.0 0.9)))
+   (: (bToGoal directB) (IncumbentGoal) (STV 1.0 0.9)))
 
 !(test (query 6 incumbentPriorityKb (: $prf (IncumbentGoal) $tv))
    (: (merge/revision
-        (rule-proof bToGoal directB)
-        (rule-proof dToGoal (rule-proof cToD directC)))
+        (bToGoal directB)
+        (dToGoal (cToD directC)))
       (IncumbentGoal)
       (STV 1.0 0.918918918918919)))
 
 !(test
    (query 6 incumbentPriorityKb
-      (: (merge/revision (rule-proof bToGoal (rule-proof aToB directA)) $_other)
+      (: (merge/revision (bToGoal (aToB directA)) $_other)
          (IncumbentGoal)
          $tv))
    ())

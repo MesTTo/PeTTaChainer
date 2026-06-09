@@ -184,8 +184,8 @@
 
 !(test (proof-term-children (custom-proof left right)) ())
 
-!(test (proof-term-evidence-list (rule-proof own_have (fact-ev (kb MAIN ()) i_have_max (Have (i max)))))
-   ((fact-ev (kb MAIN ()) i_have_max (Have (i max)))))
+!(test (proof-term-evidence-list (own_have (fact-ev (kb MAIN ()) i_have_max (Have (i max)))))
+   ((own_have (fact-ev (kb MAIN ()) i_have_max (Have (i max))))))
 
 !(test
    (let*

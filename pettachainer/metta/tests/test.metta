@@ -67,7 +67,7 @@
    ())
 
 !(test (query 30 kb (: $prf (ScoreTotal $x) $tv))
-   (: (rule-proof foldRule (rule-proof foldall prf prf prf)) (ScoreTotal 6) (STV 1.0 1.0)))
+   (: (foldRule (foldall-proof prf prf prf)) (ScoreTotal 6) (STV 1.0 1.0)))
 
 !(compileadd kb
    (: foldZeroRule
@@ -76,7 +76,7 @@
       (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
 
 !(test (query 10 kb (: $prf (Count MissingTotal $x) $tv))
-   (: (rule-proof foldZeroRule cpu) (Count MissingTotal 42) (STV 1.0 1.0)))
+   (: (foldZeroRule cpu) (Count MissingTotal 42) (STV 1.0 1.0)))
 
 !(compileadd kb
    (: foldValueShapeRule
@@ -132,11 +132,10 @@
       (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
 
 !(test (query 30 kb (: $prf (DerivedTotal $x) $tv))
-   (: (rule-proof foldDerivedRule
-         (rule-proof foldall
-            (rule-proof numFromCount (rule-proof conjunction prf cpu))
-            (rule-proof numFromCount (rule-proof conjunction prf cpu))
-            (rule-proof numFromCount (rule-proof conjunction prf cpu))))
+   (: (foldDerivedRule
+         (foldall-proof (numFromCount (conjunction prf cpu))
+            (numFromCount (conjunction prf cpu))
+            (numFromCount (conjunction prf cpu))))
       (DerivedTotal 6)
       (STV 1.0 1.0)))
 
@@ -154,12 +153,11 @@
       (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
 
 !(test (query 30 kb (: $prf (Cardinality (DogsIn house1) $x) $tv))
-   (: (rule-proof dogsInHouseRule
-         (rule-proof conjunction
+   (: (dogsInHouseRule
+         (conjunction
             prf1
-            (rule-proof foldall
-               (rule-proof conjunction prf5 prf10)
-               (rule-proof conjunction prf4 prf8))))
+            (foldall-proof (conjunction prf5 prf10)
+               (conjunction prf4 prf8))))
       (Cardinality (DogsIn house1) 5)
       (STV 1.0 1.0)))
 

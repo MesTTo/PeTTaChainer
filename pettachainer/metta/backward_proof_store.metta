@@ -31,11 +31,11 @@
 (= (aggregate-proof-label (CPU FoldAllCompiled $args $_res))
    (if (= $args ($_kb $_pattern $_extractor $_init OrFormula $_finish $_tv-mode))
       disjunction
-      foldall))
+      foldall-proof))
 (= (aggregate-proof-label (CPU GroupedFoldAllCompiled $args $_res))
    (if (= $args ($_kb $_pattern $_group $_extractor $_init OrFormula $_finish $_tv-mode))
       disjunction
-      foldall))
+      foldall-proof))
 (= (proof-ref-list ()) ())
 (= (proof-ref-list (cons $pid $rest)) (cons (proof-ref $pid) (proof-ref-list $rest)))
 (= (aggregate-child-proof-tokens ()) ())
@@ -59,7 +59,7 @@
             (let* ((($new-list $rest-proofs) (replace-cpu-proof-token-list $term $proofs)))
                ($new-list $rest-proofs))
             ($term $proofs)))))
-(= (materialize-rule-proof-token $prf $pid)
+(= (materialize-rule-token $prf $pid)
    (let*
       (($base-prf (materialize-proof-refs $prf))
        ($aggregate-proofs (aggregate-child-proof-tokens (proof-children-by-id $pid)))
@@ -68,9 +68,8 @@
 (= (materialize-proof-kind (aggregate $raw) $pid)
    (let $children (proof-children-by-id $pid)
       (if (== $children ()) cpu
-         (cons rule-proof
-            (cons (aggregate-proof-label $raw)
-               (map-flat materialize-proof-refs (proof-ref-list $children)))))))
+         (cons (aggregate-proof-label $raw)
+            (map-flat materialize-proof-refs (proof-ref-list $children))))))
 (= (rule-kind-proof-token $term)
    (if (is-expr $term)
       (let $tail1 (cdr-atom $term)
@@ -79,20 +78,19 @@
                (if (== $tail2 ()) $term
                   (car-atom $tail2)))))
       $term))
-(= (materialize-rule-proof-expression $rule-prf)
+(= (materialize-rule-expression $rule-prf)
    (if (is-expr $rule-prf)
-      (if (is-var (car-atom $rule-prf))
-         (if (== (cdr-atom $rule-prf) ())
-            $rule-prf
-            (car-atom (cdr-atom $rule-prf)))
-         (cons rule-proof
-            (cons (car-atom $rule-prf) (cdr-atom $rule-prf))))
+      (if (= (car-atom $rule-prf) (Implication $_premises $_conclusions))
+         (if (== (cdr-atom (cdr-atom $rule-prf)) ())
+            (car-atom (cdr-atom $rule-prf))
+            $rule-prf)
+         $rule-prf)
       $rule-prf))
 (= (materialize-proof-kind (rule $term) $pid)
    (let $prf (rule-kind-proof-token $term)
       (if (== $prf $term) $term
-         (let $rule-prf (materialize-rule-proof-token $prf $pid)
-            (materialize-rule-proof-expression $rule-prf)))))
+         (let $rule-prf (materialize-rule-token $prf $pid)
+            (materialize-rule-expression $rule-prf)))))
 
 (= (materialize-proof $pid)
    (match &proof ($pid $_gid $_output $kind $_score $_ev $_children)

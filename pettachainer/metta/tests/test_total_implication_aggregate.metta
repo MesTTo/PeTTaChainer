@@ -30,7 +30,7 @@
        |-
        ((TotalEvidence pos $p1 $p2 $x $case-tv)
           (kb $ctx $vars)
-          (total-pos (rule-proof conjunction $p1prf $p2prf))
+          (total-pos (conjunction $p1prf $p2prf))
           $case-tv))))
 
 !(add-to-kb
@@ -42,7 +42,7 @@
        |-
        ((TotalEvidence neg $p1 $p2 $x $case-tv)
           (kb $ctx $vars)
-          (total-neg (rule-proof conjunction (negated $p1prf) $p2prf))
+          (total-neg (conjunction (negated $p1prf) $p2prf))
           $case-tv))))
 
 !(add-to-kb
@@ -69,13 +69,12 @@
 
 !(test
    (query 50 kb (: $prf (Female bob) $stv))
-   (: (rule-proof ii_total tb
-        (rule-proof foldall
-           (rule-proof total-neg (rule-proof conjunction (negated tl) fl))
-           (rule-proof total-pos (rule-proof conjunction tl fl))
-           (rule-proof total-pos (rule-proof conjunction ta fa))
-           (rule-proof total-neg (rule-proof conjunction (negated ta) fa))
-           (rule-proof total-pos (rule-proof conjunction tm fm))
-           (rule-proof total-neg (rule-proof conjunction (negated tm) fm))))
+   (: (ii_total tb
+        (foldall-proof (total-neg (conjunction (negated tl) fl))
+           (total-pos (conjunction tl fl))
+           (total-pos (conjunction ta fa))
+           (total-neg (conjunction (negated ta) fa))
+           (total-pos (conjunction tm fm))
+           (total-neg (conjunction (negated tm) fm))))
       (Female bob)
       (STV 0.9049050000000001 0.5)))
