@@ -1,5 +1,12 @@
 ; Minimal prototype: derive TaskContext instead of hardcoding it.
 ;
+; The section 13.1 chart-selection problem solved by a simpler mechanism than the
+; section 13.2 weakness score: most-specific applicable chart by TypeDepth plus an
+; adequacy gate, over a hand-listed candidate set. This is the specificity-based
+; selector, contrasted with the open generated-context scorer in
+; context_generation.metta. It projects with ECToSTV (section 8.2) and uses
+; context-indexed PersistentEvidence (sections 7.1-7.3).
+;
 ; Goal:
 ;   Given a query like (Flies tweety), derive which local chart to use.
 ;
@@ -41,7 +48,7 @@
 (= (ContextScopedType bird-flight-context Flies) Bird)
 (= (ContextScopedType penguin-flight-context Flies) Penguin)
 
-; The persistent evidence remains context-indexed.
+; The persistent evidence remains context-indexed (sections 7.1-7.3).
 (= (PersistentEvidence Flies bird-flight-context) (EC 950.0 50.0))
 (= (PersistentEvidence Flies penguin-flight-context) (EC 0.0 100.0))
 
@@ -98,6 +105,7 @@
          (if (BetterContext? $ctx-b $ctx-a $predicate) $ctx-b $ctx-a)
          (if $b-ok $ctx-b $ctx-a))))
 
+; The section 13.1 selection: most-specific adequate applicable chart.
 (= (SelectFlyContext $query)
    (let ($ctx-a $ctx-b) (KnownFlyContexts)
       (SelectFlyContextFrom2 $query $ctx-a $ctx-b)))
@@ -121,6 +129,7 @@
          $k
          $assumptions)))
 
+; Project context evidence to an STV (section 8.2).
 (= (ECToSTV (EC $pos $neg) $p0 $k)
    (let* (($n (+ $pos $neg))
           ($den (+ $n $k))

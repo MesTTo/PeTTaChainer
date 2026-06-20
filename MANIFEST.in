@@ -1,0 +1,6 @@
+include pettachainer/*.md
+recursive-include pettachainer/metta *.metta *.pl
+prune pettachainer/metta/tests
+prune pettachainer/metta/benchmarks
+prune pettachainer/metta/linter
+exclude pettachainer/metta/profile_no_show_hook.pl

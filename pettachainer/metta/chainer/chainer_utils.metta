@@ -100,11 +100,12 @@
 (= (optimistic-revision-score $current-score $candidate-score)
    (tv-confidence (mergetvs (score-tv $current-score) (score-tv $candidate-score))))
 
-(= (rule-marginal-score no-current $candidate-score) $candidate-score)
 (= (rule-marginal-score $current-score $candidate-score)
-   (max 0.000001
-      (- (max $candidate-score (optimistic-revision-score $current-score $candidate-score))
-         $current-score)))
+   (if (== $current-score no-current)
+      $candidate-score
+      (max 0.000001
+         (- (max $candidate-score (optimistic-revision-score $current-score $candidate-score))
+            $current-score))))
 
 (= (bounded-agenda-target-size $steps) (min 1000 (max 1 $steps)))
 (= (bounded-agenda-prune-factor) 64)
@@ -150,6 +151,16 @@
       (merge/revision $prf1 $prf2)
       (if (and (= $tv1 (STV $_m1 $_c1)) (= $tv2 (STV $_m2 $_c2))) (mergetvs $tv1 $tv2) $tv1)))
 
+(= (additive-complement-tv (STV $s1 $c1) (STV $s2 $c2))
+   (STV (min 1.0 (+ $s1 $s2)) (min 1.0 (+ $c1 $c2))))
+
+(= (AdditiveComplementMergeProof ($type1 $kb $prf1 $tv1) ($_type2 $_kb2 $prf2 $tv2))
+   ($type1 $kb
+      (merge/additive-complement $prf1 $prf2)
+      (if (and (= $tv1 (STV $_s1 $_c1)) (= $tv2 (STV $_s2 $_c2)))
+         (additive-complement-tv $tv1 $tv2)
+         $tv1)))
+
 (= (foreach-flat $f ()) ())
 (= (foreach-flat $f (cons $x $xs)) (progn ($f $x) (foreach-flat $f $xs)))
 
@@ -170,7 +181,9 @@
 
 (= (next-pid) (next-search-id bwd_pid))
 
-(= (cpu-call $_steps $fun $args) (reduce (reduce (cons $fun $args))))
+(= (cpu-call $_steps $fun $args)
+   (let $res (reduce (reduce (cons $fun $args)))
+      (if (is-expr $res) (reduce $res) $res)))
 
 (= (proof-stats-by-id $pid) (match &proof ($pid $_gid $_output $_kind $score $ev $_children) ($score $ev)))
 
@@ -185,7 +198,7 @@
       (if (== $ptree $pneedle) true
          (if (is-expr $ptree) (proof-tree-contains-list (cdr-atom $ptree) $pneedle) false))))
 
-(= (proof-term-leaf-head? $head) (is-member $head (() fact-ev CPU STV)))
+(= (proof-term-leaf-head? $head) (is-member $head (() fact-ev not-fact-ev CPU STV)))
 
 (= (proof-term-children-mode $_mode (@ $prf (head conjunction))) (cdr-atom $prf))
 (= (proof-term-children-mode $_mode (@ $prf (head rule-proof))) (cdr-atom (cdr-atom $prf)))
@@ -232,6 +245,23 @@
 
 (= (evidence-subset? $set-a $set-b) (== (subtraction-atom $set-a $set-b) ()))
 
+(= (evidence-set-conflicts-with? () $_set-b) false)
+(= (evidence-set-conflicts-with? (cons $ev $rest) $set-b)
+   (or (is-member (evidence-negate $ev) $set-b) (evidence-set-conflicts-with? $rest $set-b)))
+
+(= (evidence-sets-conflict? $set-a $set-b)
+   (evidence-set-conflicts-with? $set-a $set-b))
+
+(= (evidence-set-has-complement-with? () $_set-b) false)
+(= (evidence-set-has-complement-with? (cons $ev $rest) $set-b)
+   (or (is-member (evidence-negate $ev) $set-b)
+      (evidence-set-has-complement-with? $rest $set-b)))
+
+(= (evidence-sets-complementary? $set-a $set-b)
+   (and
+      (not (evidence-sets-overlap? $set-a $set-b))
+      (evidence-set-has-complement-with? $set-a $set-b)))
+
 (= (proof-term-contains-negated-list? ()) false)
 (= (proof-term-contains-negated-list? (cons $child $rest))
    (or (proof-term-contains-negated? $child) (proof-term-contains-negated-list? $rest)))
@@ -251,9 +281,13 @@
                (let*
                   (($ev-a (proof-atom-evidence-set $proof-a))
                     ($ev-b (proof-atom-evidence-set $proof-b))
-                    ($overlap? (evidence-sets-overlap? $ev-a $ev-b)))
-                  (if $overlap?
-                     (if (>= (term-confidence $proof-a) (term-confidence $proof-b)) $proof-a $proof-b)
+                    ($overlap? (evidence-sets-overlap? $ev-a $ev-b))
+                    ($complementary? (evidence-sets-complementary? $ev-a $ev-b))
+                    ($conflict? (evidence-sets-conflict? $ev-a $ev-b)))
+                  (if (or $overlap? $conflict?)
+                     (if $complementary?
+                        (AdditiveComplementMergeProof $proof-a $proof-b)
+                        (if (>= (term-confidence $proof-a) (term-confidence $proof-b)) $proof-a $proof-b))
                      (if (>= (term-confidence $proof-a) (term-confidence $proof-b))
                         (RevisionMergeProof $proof-a $proof-b)
                         (RevisionMergeProof $proof-b $proof-a)))))))))

@@ -134,3 +134,16 @@ Avoid encoding numeric values in `STV` strength for measurement semantics.
 
 (: $prf (AreaDist rectA $areaDist) $tv)
 ```
+
+## Contextual Queries (πPLN)
+
+The chainer can generate a local context from stored evidence and project a query
+under it, the πPLN exception-finding path. Evidence is a count pair
+`(EC pos neg)`, positive and negative support kept separate, projected to an STV
+by `s = (pos + k*p0) / (pos + neg + k)`.
+
+To get the generated-context projection alongside the normal proofs, use the
+Python `contextual_query` (see the README) or the MeTTa heads
+`GeneratedContextForKBStatement` and `ContextProjectionAtomForQuery`. You write
+statements and queries exactly as above; the context is derived from the features
+on the stored atoms, so the query itself needs no special syntax.

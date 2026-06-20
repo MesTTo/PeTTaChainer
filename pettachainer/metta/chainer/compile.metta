@@ -1,7 +1,7 @@
 !(import! &self (library lib_roman))
 !(import! &self (library lib_spaces))
 !(import! &self (library lib_he))
-!(import! &self logic_config)
+!(import! &self chainer/logic_config)
 
 (= (nextctx)
    (let*
@@ -264,7 +264,7 @@
                       (mm2compileQuery $kb (: $prf $premise $tv)))
                    ($egoal (externalize-proof-structure ($goal-type $goal-kb $goal-prf $goal-tv)))
                    ($eadds (map-flat externalize-proof-structure $adds))
-                   ($_ (foreach-flat add-query-add-to-ctx $eadds)))
+                   ($_ (reduce (foreach-flat add-query-add-to-ctx $eadds))))
                  (bundle-from-execs ($egoal) $goal-tv $goal-prf)))
            ((Compute $f $args -> $res)
               (bundle-from-execs ((CPU $f $args $res)) (cpu-premise-tv $f $args $res) cpu))
@@ -521,7 +521,7 @@
 (= (disable-inversion-proof-id? $prf) (or (= $prf (mined_implication $_ $_)) (= $prf (no_inverse $_))))
 
 (= (index-source-implication $kb (: $prf (Implication (cons Premises ($premise)) (cons Conclusions ($conclusion))) $tv))
-   (chainer-add-atom implication_index ($kb $premise $conclusion $prf $tv)))
+   (reduce (chainer-add-atom implication_index ($kb $premise $conclusion $prf $tv))))
 (= (index-source-implication $_kb $_stmt) ())
 
 (= (complement-premise (Not $premise)) $premise)

@@ -112,17 +112,19 @@
                      (list_to_set (append $seen $pev))
                      (cons $pid $rev-pids))))))))
 
-(= (frontier-waiter-step (@ $waiter (head frontier-waiter)) $rest) (cons $waiter $rest))
-(= (frontier-waiter-step $_waiter $rest) $rest)
+(= (frontier-waiter-step $waiter $rest)
+   (if (= $waiter (frontier-waiter $_parent-gid $_bundle $_score $_seen $_rev-pids))
+      (cons $waiter $rest)
+      $rest))
 
-(= (aggregate-waiter-step (aggregate-waiter $agg-gid) $rest) (cons $agg-gid $rest))
-(= (aggregate-waiter-step $_waiter $rest) $rest)
+(= (aggregate-waiter-step $waiter $rest)
+   (if (= $waiter (aggregate-waiter $agg-gid)) (cons $agg-gid $rest) $rest))
 
 (= (spawn-frontier-goal-heap $agenda $score $gid $waiter)
    (let*
-      (($_1 (chainer-add-atom &goal_waiter ($gid $waiter)))
+       (($_1 (chainer-add-atom &goal_waiter ($gid $waiter)))
        ($agenda1
-          (fold-flat (|-> ($acc $pid) (advance-frontier-waiter-heap $acc $waiter $pid))
+          (fold-flat (|-> ($acc $pid) (reduce (advance-frontier-waiter-heap $acc $waiter $pid)))
              $agenda
              (goal-live-proof-ids $gid)))
        ($nagenda (schedule-goal-heap $agenda1 $score $gid)))
@@ -147,8 +149,10 @@
 (= (aggregate-args-grouped? $args)
    (if (= $args ($_kb $_pattern $_group $_extractor $_init $_fun $_finish $_tv-mode)) true false))
 
-(= (aggregate-proof-key ($type ($kbid $ctx $vars) $_prf $_tv)) (($kbid $ctx $vars) $type))
-(= (aggregate-proof-key $child-atom) $child-atom)
+(= (aggregate-proof-key $child-atom)
+   (case $child-atom (
+      (($type ($kbid $ctx $vars) $_prf $_tv) (($kbid $ctx $vars) $type))
+      ($other $other))))
 
 (= (aggregate-proof-fold-step $args (aggregate-state $acc $ev $seen $children) $pid)
    (let*
@@ -363,41 +367,44 @@
    (let*
       (($goal (and-bundle-goal $bundle))
        ($premises (and-bundle-premises $bundle)))
-      (case $premises (
-           (()
-              (let*
-                 (($pid-list (reverse $rev-pids))
-                  ($candidate
-                     (normalize-proof-candidate-evidence
-                        (proof-candidate (rule $goal) $score $seen $pid-list)))
-                  ((proof-candidate $_kind $_candidate-score $candidate-ev $_children) $candidate))
-                 (commit-proof-candidate-heap $agenda
-                    $parent-gid
-                    (classify-goal-proof-candidate $parent-gid $goal $candidate-ev $score)
-                    $candidate)))
-           ((cons $prem $_rest)
-              (let*
-                 ((($parent-depth $_goal1 $_expanded $_pending) (goal-by-id $parent-gid))
-                  ($gid (ensure-goal-at-depth $prem (+ 1 $parent-depth)))
-                  ($stored-bundle (copy_term $bundle)))
-                 (spawn-frontier-goal-heap $agenda
-                    $score
-                    $gid
-                    (frontier-waiter $parent-gid
-                       $stored-bundle
-                       $score
-                       $seen
-                       $rev-pids))))))))
+      (if (== $premises ())
+         (let*
+            (($pid-list (reverse $rev-pids))
+             ($candidate
+                (normalize-proof-candidate-evidence
+                   (proof-candidate (rule $goal) $score $seen $pid-list)))
+             ((proof-candidate $_kind $_candidate-score $candidate-ev $_children) $candidate))
+            (commit-proof-candidate-heap $agenda
+               $parent-gid
+               (classify-goal-proof-candidate $parent-gid $goal $candidate-ev $score)
+               $candidate))
+         (let*
+            (($prem (car-atom $premises))
+             (($parent-depth $_goal1 $_expanded $_pending) (goal-by-id $parent-gid))
+             ($gid (ensure-goal-at-depth $prem (+ 1 $parent-depth)))
+             ($stored-bundle (copy_term $bundle)))
+            (spawn-frontier-goal-heap $agenda
+               $score
+               $gid
+               (frontier-waiter $parent-gid
+                  $stored-bundle
+                  $score
+                  $seen
+                  $rev-pids))))))
 
 (= (expand-rule-goal-heap $agenda $parent-gid $goal)
-   (fold-flat expand-rule-goal-fold
-      $agenda
-      (collapse (rule-goal-view ($goal $parent-gid)))))
+   (let $rule-rows (collapse (rule-goal-view ($goal $parent-gid)))
+      (if (== $rule-rows ())
+         $agenda
+         (fold-flat expand-rule-goal-fold
+            $agenda
+            $rule-rows))))
 
 (= (expand-rule-goal-fold $agenda ($args $goal $parent-gid))
    (let*
       (($expected-score (premises-expected-confidence (copy_term $args)))
-       ($bound (rule-marginal-score (goal-current-confidence $parent-gid) $expected-score))
+       ($current-score (goal-current-confidence $parent-gid))
+       ($bound (rule-marginal-score $current-score $expected-score))
        ($bundle (copy_term (make-and-bundle $goal $args))))
       (spawn-frontier-heap $agenda
          $parent-gid
@@ -450,17 +457,87 @@
 
 (= (chainer-run $steps $goal)
    (let*
-      (($_clear (foreach-flat remove-all-atoms (&goal &goal_lookup &goal_waiter &aggregate &proof &proof_live_cache &goal_live_cache)))
-       ($_reset (foreach-flat (|-> ($key) (change-state! $key 0)) (bwd_gid bwd_pid bwd_live_epoch)))
+      (($_clear
+          (progn
+             (remove-all-atoms &goal)
+             (remove-all-atoms &goal_lookup)
+             (remove-all-atoms &goal_waiter)
+             (remove-all-atoms &aggregate)
+             (remove-all-atoms &proof)
+             (remove-all-atoms &proof_live_cache)
+             (remove-all-atoms &goal_live_cache)
+             true))
+       ($_reset
+          (progn
+             (change-state! bwd_gid 0)
+             (change-state! bwd_pid 0)
+             (change-state! bwd_live_epoch 0)
+             true))
        ($root-gid (ensure-goal-at-depth $goal 0))
        ($agenda0 (schedule-goal-heap (empty_heap) 1.0 $root-gid))
-       ((search-state $_steps-left $_agenda1)
-          (once (if (<= $steps 0) (search-state 0 $agenda0) (search-agenda-heap (+ $steps 1) $agenda0)))))
-      (chainer-run-result $root-gid (once (goal-results $root-gid)))))
+       ($_search
+          (let $_ignored-search (collapse (if (<= $steps 0) () (search-agenda-heap (+ $steps 1) $agenda0)))
+             true)))
+      (chainer-run-result $root-gid
+         (once
+            (let*
+               (($pids-bag (collapse (goal-live-proof-ids $root-gid)))
+                (($_depth $goal $_expanded $_pending) (goal-by-id $root-gid)))
+               (if (== $pids-bag ())
+                  ()
+                  (if (== (car-atom $pids-bag) ())
+                     ()
+                     (if (goal-has-type-vars? $goal)
+                        (map-flat materialize-result-atom (map-flat proof-output-atom (car-atom $pids-bag)))
+                        (let $pid (car-atom (car-atom $pids-bag))
+                           (if (== (cdr-atom (car-atom $pids-bag)) ())
+                              (materialize-result-atom (proof-output-atom $pid))
+                              (let $merged
+                                 (fold-flat (|-> ($acc $next-pid) (merge-proof-atoms $acc (proof-output-atom $next-pid)))
+                                    (proof-output-atom $pid)
+                                    (cdr-atom (car-atom $pids-bag)))
+                                 (if (== $merged ()) () (materialize-result-atom $merged)))))))))))))
 
 (= (chainer $steps $goal)
-   (let (chainer-run-result $_root-gid $results) (chainer-run $steps $goal)
-      $results))
+   (let*
+      (($_clear
+          (progn
+             (remove-all-atoms &goal)
+             (remove-all-atoms &goal_lookup)
+             (remove-all-atoms &goal_waiter)
+             (remove-all-atoms &aggregate)
+             (remove-all-atoms &proof)
+             (remove-all-atoms &proof_live_cache)
+             (remove-all-atoms &goal_live_cache)
+             true))
+       ($_reset
+          (progn
+             (change-state! bwd_gid 0)
+             (change-state! bwd_pid 0)
+             (change-state! bwd_live_epoch 0)
+             true))
+       ($root-gid (ensure-goal-at-depth $goal 0))
+       ($agenda0 (schedule-goal-heap (empty_heap) 1.0 $root-gid))
+       ($_search
+          (let $_ignored-search (collapse (if (<= $steps 0) () (search-agenda-heap (+ $steps 1) $agenda0)))
+             true))
+       ($pids-bag (collapse (goal-live-proof-ids $root-gid)))
+       (($_depth $stored-goal $_expanded $_pending) (goal-by-id $root-gid)))
+      (if (== $pids-bag ())
+         ()
+         (if (== (car-atom $pids-bag) ())
+            ()
+            (if (goal-has-type-vars? $stored-goal)
+               (let $open-results (map-flat materialize-result-atom (map-flat proof-output-atom (car-atom $pids-bag)))
+                  (superpose $open-results))
+               (let $pid (car-atom (car-atom $pids-bag))
+                  (if (== (cdr-atom (car-atom $pids-bag)) ())
+                     (materialize-result-atom (proof-output-atom $pid))
+                     (let $merged
+                        (fold-flat (|-> ($acc $next-pid) (merge-proof-atoms $acc (proof-output-atom $next-pid)))
+                           (proof-output-atom $pid)
+                           (cdr-atom (car-atom $pids-bag)))
+                        (if (== $merged ()) () (materialize-result-atom $merged))))))))))
 
 (= (chainer-materialize $steps $goal)
    (let (chainer-run-result $root-gid $results) (chainer-run $steps $goal)

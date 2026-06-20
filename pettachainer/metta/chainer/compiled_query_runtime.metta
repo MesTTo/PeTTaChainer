@@ -56,30 +56,41 @@
       (collapse
          (match &temp_query_ref (clause_ref $ref)
             (progn (erase-clause-ref $ref) (remove-atom &temp_query_ref (clause_ref $ref)))))
-      ()))
+      true))
 
-(= (inject-compiled-adds $adds) (if (= $adds ()) () (foreach-flat (kb-add-expr temp) $adds)))
+(= (inject-compiled-adds $adds)
+   (if (= $adds ())
+      true
+      (progn
+         (foreach-flat (kb-add-expr temp) $adds)
+         true)))
+
+(= (drop-empty-results $results)
+   (case $results (
+      (() ())
+      ((cons () $rest) (drop-empty-results $rest))
+      ((cons $head $rest) (cons $head (drop-empty-results $rest))))))
 
 (= (query $steps $kb $stmt)
    (let*
       (((compiled-query $goal $adds) (mm2compileQuery $kb $stmt))
         ($_clear-temp-before (clear-temp-query-adds))
         ($_ (inject-compiled-adds $adds))
-        ($results (chainer $steps $goal))
+        ($raw-results (collapse (reduce (chainer $steps $goal))))
+        ($results (drop-empty-results $raw-results))
         ($eres (map-flat externalize-proof-structure $results))
         ($pres (map-flat pretty $eres))
         ($_clear-temp-after (clear-temp-query-adds)))
-      (superpose
-         $pres)))
+      (if (== $pres ()) (empty) (superpose $pres))))
 
 (= (query-materialize $steps $kb $stmt)
    (let*
       (((compiled-query $goal $adds) (mm2compileQuery $kb $stmt))
         ($_clear-temp-before (clear-temp-query-adds))
         ($_ (inject-compiled-adds $adds))
-        ($results (chainer-materialize $steps $goal))
+        ($raw-results (collapse (reduce (chainer-materialize $steps $goal))))
+        ($results (drop-empty-results $raw-results))
         ($eres (map-flat externalize-proof-structure $results))
         ($pres (map-flat pretty $eres))
         ($_clear-temp-after (clear-temp-query-adds)))
-      (superpose
-         $pres)))
+      (if (== $pres ()) (empty) (superpose $pres))))

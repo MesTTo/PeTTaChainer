@@ -329,6 +329,45 @@ Area is the product of length and width distributions, derived through a rule.
 !(query 120 kb (: $prf (AreaDist rectA $areaDist) $tv))
 ```
 
+## Contextual Reasoning (πPLN)
+
+PeTTaChainer can reason about exceptions by generating a local context from the
+stored evidence. This is the operational core of πPLN; see the README and
+`pettachainer/metta/piPLN_paper_explained/`.
+
+Evidence is a count pair, positive and negative support kept separate:
+
+```metta
+(EC pos neg)
+```
+
+A local chart projects those counts to an STV with a prior `p0` and prior weight `k`:
+
+```
+s = (pos + k*p0) / (pos + neg + k)
+c = (pos + neg) / (pos + neg + k)
+```
+
+`ContextECToSTV` runs this projection and `STVToEC` inverts it. From Python,
+`contextual_query` runs an ordinary query and also returns a generated-context
+projection:
+
+```python
+from pettachainer import PeTTaChainer
+
+handler = PeTTaChainer()
+# ... add evidence atoms for (Bird x), (Penguin x), (Fly x) ...
+result = handler.contextual_query("(: $prf (Fly tweety) $tv)", timeout_sec=0)
+result.proofs       # the rule-based proofs
+result.projection   # (: (generated-context) (Fly tweety) (STV s c))
+```
+
+The chainer reads the entity's features off the KB, generates the guard that best
+reduces evidence conflict (the weakest adequate chart), routes the query inside
+it, and projects the answer. The bird/penguin exception is the worked example.
+`pettachainer/metta/piPLN_paper_explained/paper_translation.metta` is a runnable,
+section-by-section reading of the formalism.
+
 ## Notes
 
 - `NatDist`/`FloatDist` remain available for exact small cases.

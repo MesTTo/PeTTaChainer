@@ -27,7 +27,8 @@
 (= (ECNegative (EC $_pos $neg)) $neg)
 (= (ECTotal (EC $pos $neg)) (+ $pos $neg))
 
-; A local chart can project raw evidence to a legacy PLN STV.
+; A local chart can project raw evidence to a legacy PLN STV. This is the
+; Section 8.2 projection, used here by the Section 7.3 chart constructor.
 ; The prior p0 and prior weight k belong to the context, not to storage.
 ;
 ;   s = (n+ + k p0) / (n+ + n- + k)
@@ -460,14 +461,15 @@
       (ChartDistanceDist everyday-route (ParticleFromPairs ((9 0.2) (10 0.6) (11 0.2))))
       (STV 1.0 1.0)))
 
-!(compileadd piplndistkb
-   (: longTripRule
-      (Implication
-         (Premises
-            (ChartDistanceDist everyday-route $distance)
-            (GreaterThan $distance 10))
-         (Conclusions (LongTrip everyday-route)))
-      (STV 1.0 1.0)))
+; This is a chart projection, not a durable implication. The threshold
+; probability is therefore copied directly into the conclusion truth value
+; instead of passing through TotalMpConclusionFormula's fallback branch.
+!(add-to-kb
+   (rules
+      ((((ChartDistanceDist everyday-route $distance) (piplndistkb $ctx $vars) $prf $_atv)
+        (CPU DistGreaterThanFormula ($distance 10) $tv))
+       |-
+       ((LongTrip everyday-route) (piplndistkb $ctx $vars) (dist-threshold-proof $prf cpu) $tv))))
 
 !(test
    (let (: $prf (LongTrip everyday-route) $tv)
@@ -481,3 +483,224 @@
       (query 20 piplndistkb (: $prf (ChartDistanceDist everyday-route $distance) $tv))
       (ParticlePairs $distance))
    ((9 0.2) (10 0.6) (11 0.2)))
+
+; ----------------------------------------------------------------------
+; Sections 4.1-4.3: p-bits and contradiction as information
+; ----------------------------------------------------------------------
+; A p-bit keeps positive and negative support separate. v- is not 1 - v+,
+; so support and opposition can both be high (paper p. 11). The four corners
+; are:
+;
+;   (1,0) true-only   (0,1) false-only   (1,1) both   (0,0) neither
+;
+; The prior-free empirical strength is the k=0 limit of the Section 8.2
+; projection:
+;
+;   s_emp = n+ / (n+ + n-)
+;
+; Contradiction is information (paper p. 12). (1000,1000) and (1,1) both
+; project to strength 1/2, but the first is a live high-evidence conflict and
+; the second is near-ignorance. Storing raw counts keeps them apart; a scalar
+; strength would lose the difference.
+
+(= (ECEmpStrength (EC $pos $neg))
+   (if (== (+ $pos $neg) 0.0) 0.5 (/ $pos (+ $pos $neg))))
+
+!(test (ECEmpStrength (EC 1000.0 1000.0)) 0.5)
+!(test (ECEmpStrength (EC 1.0 1.0)) 0.5)
+
+; Same strength, different totals: the scalar alone hides the conflict.
+!(test (ECTotal (EC 1000.0 1000.0)) 2000.0)
+!(test (ECTotal (EC 1.0 1.0)) 2.0)
+
+; The Section 8.2 confidence separates them (k=2): the live conflict is
+; near-certain in weight of evidence, the balanced pair is not.
+!(test
+   (let* (((STV $_s1 $c1) (ECToSTV (EC 1000.0 1000.0) 0.5 2.0))
+          ((STV $_s2 $c2) (ECToSTV (EC 1.0 1.0) 0.5 2.0)))
+      (and (> $c1 0.999) (< $c2 0.6)))
+   true)
+
+; ----------------------------------------------------------------------
+; Section 10.2: non-gluability of locally consistent charts (Theorem 10.2)
+; ----------------------------------------------------------------------
+; Locally coherent charts that agree on every pairwise overlap need not admit
+; any global joint distribution (paper p. 24, a Vorob'ev/Bell-style result).
+; Three +/-1 variables, each pair with P(++)=P(--)=1/16 and P(+-)=P(-+)=7/16,
+; give every single variable a uniform marginal and implied pairwise
+; correlation r = -3/4. A global joint would need the equicorrelation matrix
+;
+;   R = [[1,r,r],[r,1,r],[r,r,1]]
+;
+; to be positive semidefinite. Its eigenvalues are (1 + 2r) once and (1 - r)
+; twice, so the smallest is 1 + 2r. At r = -3/4 that is -1/2 < 0, R is not PSD,
+; and no global joint exists. Each chart is fine on its own; gluing is what
+; fails. Gluing is an achievement, not an axiom (Principle 10.3).
+
+(= (EquicorrMinEigenvalue $r) (+ 1.0 (* 2.0 $r)))
+(= (GlobalJointExists? $r) (<= 0.0 (EquicorrMinEigenvalue $r)))
+
+!(test (EquicorrMinEigenvalue -0.75) -0.5)
+!(test (GlobalJointExists? -0.75) false)
+; The extendibility boundary for three equicorrelated bits is r = -1/2.
+!(test (GlobalJointExists? -0.5) true)
+
+; ----------------------------------------------------------------------
+; Sections 11.1, 11.3, 11.10: revision as evidence transformation
+; ----------------------------------------------------------------------
+; Revision in piPLN is context-indexed evidence transformation, not global
+; Bayesian conditioning (paper p. 25). Same context, disjoint provenance:
+; tensor the counts (Section 11.3, the evidence-count quantale tensor):
+;
+;   K_{t+1}(phi,C) = K_t(phi,C) tensor Delta
+;
+; The beta-binomial special case (Section 11.10, paper p. 30) says
+; revise-then-project equals project-the-sum: empirical count revision
+; commutes with local beta projection, and needs no prior.
+
+(= (ReviseEC $ec $delta) (ECTensor $ec $delta))
+
+!(test (ReviseEC (EC 480.0 20.0) (EC 50.0 450.0)) (EC 530.0 470.0))
+
+; Section 11.10: updating then projecting equals projecting the tensor.
+!(test (ECToBeta (ReviseEC (EC 5.0 5.0) (EC 3.0 1.0)) 0.5 2.0) (Beta 9.0 7.0))
+
+; Section 11.1: classic PLN strength revision and the overlap count discount
+; n = n1 + n2 - c*min(n1,n2). c=0 independent evidence, c=1 fully redundant.
+(= (ReviseStrength $n1 $s1 $n2 $s2)
+   (/ (+ (* $n1 $s1) (* $n2 $s2)) (+ $n1 $n2)))
+(= (OverlapDiscountedCount $n1 $n2 $c)
+   (- (+ $n1 $n2) (* $c (min $n1 $n2))))
+
+; The Section 16.1 live-contradiction surveys (480,20) and (50,450), each near
+; deterministic in opposite directions, revise to strength 530/1000 = 0.53.
+!(test (ApproxEq (ECEmpStrength (ReviseEC (EC 480.0 20.0) (EC 50.0 450.0))) 0.53 0.0001) true)
+!(test (ApproxEq (ReviseStrength 500.0 0.96 500.0 0.1) 0.53 0.0001) true)
+!(test (OverlapDiscountedCount 500.0 500.0 0.0) 1000.0)
+!(test (OverlapDiscountedCount 500.0 500.0 1.0) 500.0)
+
+; ----------------------------------------------------------------------
+; Sections 12.3-12.4: implication and conjunction direct introduction
+; ----------------------------------------------------------------------
+; A PLN rule is recovered inside a chart by counting cases (paper p. 33).
+; Implication P => Q restricts to the cases where P holds (Section 12.3):
+;
+;   n+ = |{x : P(x) and Q(x)}|     n- = |{x : P(x) and not Q(x)}|
+;
+; Conjunction A and B counts joint truth on the common sample set
+; (Section 12.4): n+ = |A and B|, n- = |not (A and B)|. Each case is an
+; observation (Obs P-or-A Q-or-B) of two 1/0 bits. The paper warns: this is
+; valid only inside a chart with a shared joint observation space.
+
+(= (CountImplication Nil) (EC 0.0 0.0))
+(= (CountImplication (Cons (Obs $p $q) $rest))
+   (let (EC $pos $neg) (CountImplication $rest)
+      (if (== $p 1)
+         (if (== $q 1) (EC (+ $pos 1.0) $neg) (EC $pos (+ $neg 1.0)))
+         (EC $pos $neg))))
+
+(= (CountConjunction Nil) (EC 0.0 0.0))
+(= (CountConjunction (Cons (Obs $a $b) $rest))
+   (let (EC $pos $neg) (CountConjunction $rest)
+      (if (== (+ $a $b) 2) (EC (+ $pos 1.0) $neg) (EC $pos (+ $neg 1.0)))))
+
+; The paper's worked conjunction (p. 33): ten cases, A and B both true in three.
+(= (TenCases)
+   (Cons (Obs 1 1) (Cons (Obs 1 1) (Cons (Obs 1 1)
+      (Cons (Obs 1 0) (Cons (Obs 0 1) (Cons (Obs 0 0)
+         (Cons (Obs 1 0) (Cons (Obs 0 1) (Cons (Obs 0 0) (Cons (Obs 0 0) Nil)))))))))))
+
+!(test (CountConjunction (TenCases)) (EC 3.0 7.0))
+; Beta(4,8) under a flat prior (alpha0 = beta0 = 1), posterior mean 1/3.
+!(test (ECToBeta (CountConjunction (TenCases)) 0.5 2.0) (Beta 4.0 8.0))
+!(test (ApproxEq (BetaMean (ECToBeta (CountConjunction (TenCases)) 0.5 2.0)) 0.333333 0.0001) true)
+
+; Implication drops the P-false cases: the same ten observations counted as
+; P=>Q give (3,2) -- three P&Q, two P&not-Q, five P-false dropped.
+!(test (CountImplication (TenCases)) (EC 3.0 2.0))
+
+; ----------------------------------------------------------------------
+; Section 13.2: the weakest adequate chart
+; ----------------------------------------------------------------------
+; Chart selection prefers the weakest hypothesis that still fits the data,
+; stays task-relevant, and respects the cost budget (paper p. 34):
+;
+;   H* = arg max_H w(H)   s.t.  Fit(H,E) >= theta, Rel(H) >= rho, Cost(H) <= B
+;
+; A combined score folds the constraints into the product control quantale:
+;
+;   Score(H) = Fit(H,E) (x) Weak(H) (x) Rel(H) (x) Cost(H)^{-1}
+;
+; The generated-context scorer and the beam (context_generation.metta,
+; context_generation_beam*.metta) are the operational version over ContextAnd
+; guards: Fit is conflict reduction, Weak/Cost is the depth-graded feature
+; penalty, Rel is the query-focus bonus.
+
+(= (ChartAdequate? $fit $rel $cost $theta $rho $budget)
+   (and (<= $theta $fit) (and (<= $rho $rel) (<= $cost $budget))))
+
+(= (ChartScore $fit $weak $rel $cost)
+   (* (* $fit $weak) (* $rel (/ 1.0 $cost))))
+
+!(test (ChartAdequate? 0.9 0.8 2.0 0.85 0.5 3.0) true)
+!(test (ChartAdequate? 0.2 0.8 2.0 0.85 0.5 3.0) false)
+; At equal fit, a simpler chart (higher weakness, lower cost) scores higher.
+!(test (> (ChartScore 0.9 0.9 1.0 1.0) (ChartScore 0.9 0.5 1.0 2.0)) true)
+
+; ----------------------------------------------------------------------
+; Section 14.2: chainer step priority
+; ----------------------------------------------------------------------
+; Inference control scalarizes the product-quantale label of a candidate step
+; into a scheduling priority (a projection, not the semantics, paper p. 36):
+;
+;   Priority(a) = l1 U_T(a) + l2 w_a + l3 dconf(a)
+;                 - l4 ConflictPenalty(a) - l5 Cost(a)
+;
+; U_T is task utility, w_a weakness, dconf expected confidence gain. The
+; chainer's rule-marginal-score and the context branch utility
+; (context_inference_control.metta) are concrete instances of this.
+
+(= (StepPriority $util $weak $dconf $conflict $cost $l1 $l2 $l3 $l4 $l5)
+   (- (- (+ (+ (* $l1 $util) (* $l2 $weak)) (* $l3 $dconf))
+         (* $l4 $conflict))
+      (* $l5 $cost)))
+
+; A high-utility, low-conflict step outranks a low-utility, high-conflict one.
+!(test
+   (> (StepPriority 1.0 0.8 0.5 0.0 0.1   1.0 0.5 0.5 1.0 0.2)
+      (StepPriority 0.2 0.8 0.5 0.9 0.5   1.0 0.5 0.5 1.0 0.2))
+   true)
+
+; ----------------------------------------------------------------------
+; Sections 15.1, 15.3: quantale-valued factor graphs (minimal core)
+; ----------------------------------------------------------------------
+; Inference control can run as message passing where sum-product is
+; generalized: sum becomes the quantale join, product becomes the tensor
+; (paper p. 37). A full factor-graph engine is future work; this is the
+; message algebra and the conflict-diagnostic factor on the evidence-count
+; quantale.
+;
+;   variable -> factor:  m_{v->f} = tensor over g != f of m_{g->v}
+;   factor -> variable:  m_{f->v} = join over the other args of
+;                         ( factor tensor incoming messages )
+;
+; Carrier is Q_cnt+-, so a variable combines incoming evidence by tensor and
+; alternatives combine by join.
+
+(= (VarMessage2 $m1 $m2) (ECTensor $m1 $m2))
+(= (FactorAlt2 $m1 $m2) (ECJoin $m1 $m2))
+
+!(test (VarMessage2 (EC 3.0 1.0) (EC 2.0 5.0)) (EC 5.0 6.0))
+!(test (FactorAlt2 (EC 3.0 1.0) (EC 2.0 5.0)) (EC 3.0 5.0))
+
+; Section 15.3, the conflict-diagnostic factor f_conflict (paper p. 38, 42):
+; monotone in both support and opposition. A simple count trigger fires when
+; both sides are large enough.
+(= (ConflictFactor? (EC $pos $neg) $min-side $min-total)
+   (and (<= $min-side (min $pos $neg))
+        (<= $min-total (+ $pos $neg))))
+
+; The Section 16.1 live contradiction (530,470) trips it; balanced ignorance
+; (1,1) does not.
+!(test (ConflictFactor? (EC 530.0 470.0) 50.0 100.0) true)
+!(test (ConflictFactor? (EC 1.0 1.0) 50.0 100.0) false)

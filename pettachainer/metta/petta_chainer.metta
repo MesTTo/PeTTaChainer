@@ -1,5 +1,5 @@
-!(import! &self compile)
-!(import! &self mining)
+!(import! &self chainer/compile)
+!(import! &self chainer/mining)
 
 !(use-module! heaps)
 
@@ -9,13 +9,15 @@
 !(assertzPredicate (Predicate (arity get_from_heap 4)))
 !(assertzPredicate (Predicate (arity heap_size 2)))
 
-!(import! &self chainer_utils)
-!(import! &self forward_chainer)
-!(import! &self dist_formulas)
-!(import! &self tv_formulas)
-!(import! &self compiled_query_runtime)
-!(import! &self backward_proof_store)
-!(import! &self backward_chainer)
+!(import! &self chainer/chainer_utils)
+!(import! &self chainer/forward_chainer)
+!(import! &self chainer/dist_formulas)
+!(import! &self chainer/tv_formulas)
+!(import! &self chainer/compiled_query_runtime)
+!(import! &self chainer/backward_proof_store)
+!(import! &self chainer/backward_chainer)
+!(import! &self context/context_from_kb)
+!(import! &self chainer/proof_structure_audit)
 
 (= (add-to-kb $expr) (kb-add-expr live $expr))
 

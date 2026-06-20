@@ -5,15 +5,43 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "PeTTaChainer"
 version = "0.1.0"
-description = "Backward and forward PLN chaining on top of PeTTa"
+description = "Paraconsistent PLN (piPLN) chaining with generated contexts, on top of PeTTa"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
+authors = [{ name = "MesTTo" }]
+keywords = [
+    "metta",
+    "pln",
+    "probabilistic-logic-networks",
+    "paraconsistent-logic",
+    "hyperon",
+    "reasoning",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "petta>=0.1.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/MesTTo/PeTTaChainer"
+Upstream = "https://github.com/rTreutlein/PeTTaChainer"
+
+# Dev convenience: source petta from the sibling PeTTa checkout. End users install
+# petta separately (it is not on PyPI); see the README install notes.
 [tool.uv.sources]
-petta = { path = "../../PeTTa", editable = true }
+petta = { path = "../PeTTa", editable = true }
+
+# The MeTTa runtime and the LLM specs are selected in MANIFEST.in, so an installed
+# wheel ships exactly the runtime, demos, and specs, and none of the dev files.
+[tool.setuptools]
+include-package-data = true
 
 [tool.setuptools.packages.find]
 include = ["pettachainer*"]
+exclude = ["pettachainer.benchmarks*"]

@@ -16,12 +16,15 @@
       (STV 1.0 1.0)))
 
 !(test
-   (collapse
-      (query 30 kb
-         (: $prf
-            (FoldAll (Score $name $n) $n 0 (|-> ($acc $elem) (+ $acc $elem)) -> $total)
-            $tv)))
-   ((: (rule-proof foldall prfA prfB prfC) (FoldAll (Score $_name $_n) $_n 0 lambda_20 -> 6) (STV 1.0 1.0))))
+   (let (: (rule-proof foldall prfA prfB prfC) (FoldAll (Score $_name $_n) $_n 0 $_lambda -> 6) (STV 1.0 1.0))
+      (superpose
+         (collapse
+            (query 30 kb
+               (: $prf
+                  (FoldAll (Score $name $n) $n 0 (|-> ($acc $elem) (+ $acc $elem)) -> $total)
+                  $tv))))
+      true)
+   true)
 
 !(test
    (collapse

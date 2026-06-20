@@ -5,10 +5,19 @@ import sys
 import threading
 import traceback
 import uuid
+from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple
 import __main__
 
-from petta import PeTTa
+try:
+    from petta import PeTTa
+except ImportError as exc:  # pragma: no cover - runtime dependency missing
+    raise ImportError(
+        "PeTTaChainer needs the 'petta' package and its SWI-Prolog/janus runtime. "
+        "petta is not on PyPI; install it from the PeTTa repository "
+        "(https://github.com/patham9/PeTTa) and make sure SWI-Prolog 9.3.x with "
+        "janus-swi is available. See the README install notes."
+    ) from exc
 
 if __package__:
     from .pln_validator import check_query, check_stmt
@@ -24,6 +33,16 @@ logger = logging.getLogger(__name__)
 
 LOADEDLIB = False
 LOADED_LOCK = threading.Lock()
+
+
+@dataclass(frozen=True)
+class ContextualQueryResult:
+    proofs: tuple[str, ...]
+    projection: str | None
+
+    @property
+    def answers(self) -> tuple[str, ...]:
+        return (() if self.projection is None else (self.projection,)) + self.proofs
 
 
 def get_language_spec(llm_focused: bool = True) -> str:
@@ -53,6 +72,39 @@ def _query_worker(
 
 def _as_list(value) -> List[str]:
     return [value] if isinstance(value, str) else value
+
+
+def _query_results(value) -> List[str]:
+    return [item for item in _as_list(value) if str(item).strip() != "()"]
+
+
+def _extract_top_level_or_children(query: str) -> Optional[List[str]]:
+    marker = "(Or "
+    start = query.find(marker)
+    if start < 0:
+        return None
+    i = start + len(marker)
+    depth = 0
+    current: list[str] = []
+    children: list[str] = []
+    while i < len(query):
+        char = query[i]
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            if depth == 0:
+                if current:
+                    children.append("".join(current).strip())
+                return children
+            depth -= 1
+        if char.isspace() and depth == 0:
+            if current:
+                children.append("".join(current).strip())
+                current = []
+        else:
+            current.append(char)
+        i += 1
+    return None
 
 
 class PeTTaChainer:
@@ -183,9 +235,12 @@ class PeTTaChainer:
         self._validate("query", atom, evaluated_query, check_query)
 
         if timeout_sec is None or timeout_sec <= 0:
-            return _as_list(
+            results = _query_results(
                 self.handler.process_metta_string(f"!(query {steps} {self.kb} {evaluated_query})")
             )
+            if not results:
+                results = self._predicate_or_fallback(evaluated_query, steps)
+            return results
 
         main_file = getattr(__main__, "__file__", None)
         if not main_file or main_file == "<stdin>":
@@ -227,13 +282,68 @@ class PeTTaChainer:
                 raise RuntimeError("PeTTa query worker exited without returning a result")
             status, payload = parent_conn.recv()
             if status == "ok":
-                return payload
+                return _query_results(payload)
             err_type, err_msg, err_tb = payload
             raise RuntimeError(f"PeTTa query worker failed [{err_type}]: {err_msg}\n{err_tb}")
         finally:
             parent_conn.close()
 
+    def contextual_query(
+        self,
+        atom: str,
+        steps: int = 100,
+        timeout_sec: Optional[float] = 10,
+        *,
+        prior_weight: float = 2.0,
+        evidence_cap: float = 1000.0,
+    ) -> ContextualQueryResult:
+        evaluated_query = self._evaluate(atom)
+        self._validate("query", atom, evaluated_query, check_query)
+        proofs = tuple(self.query(evaluated_query, steps=steps, timeout_sec=timeout_sec))
+        projection = self._generated_context_projection(evaluated_query, prior_weight, evidence_cap)
+        return ContextualQueryResult(proofs, projection)
+
+    def _generated_context_projection(
+        self, evaluated_query: str, prior_weight: float, evidence_cap: float
+    ) -> Optional[str]:
+        """Project the query through the MeTTa generated-context heads.
+
+        Injects the stored evidence atoms into &self so the context heads can
+        match them, calls ContextProjectionAtomForQuery, then removes them again.
+        """
+        atoms = [atom for atom, _mining in self._added_atoms]
+        if not atoms:
+            return None
+        add = " ".join(f"(add-atom &self {atom})" for atom in atoms)
+        remove = " ".join(f"(remove-atom &self {atom})" for atom in atoms)
+        self.handler.process_metta_string(f"!(superpose ({add}))")
+        try:
+            raw = self.handler.process_metta_string(
+                f"!(ContextProjectionAtomForQuery &self {evaluated_query} {prior_weight} {evidence_cap})"
+            )
+        finally:
+            self.handler.process_metta_string(f"!(superpose ({remove}))")
+        for item in _as_list(raw):
+            text = str(item).strip()
+            if text.startswith("(: (generated-context)"):
+                return text
+        return None
+
     language_spec = staticmethod(get_language_spec)
+
+    def _predicate_or_fallback(self, evaluated_query: str, steps: int) -> List[str]:
+        if self._logic_config_path is None or self._logic_config_path.name != "predicate_logic.metta":
+            return []
+        children = _extract_top_level_or_children(evaluated_query)
+        if not children:
+            return []
+        for child in children:
+            results = _query_results(
+                self.handler.process_metta_string(f"!(query {steps} {self.kb} (: $prf {child} $tv))")
+            )
+            if results:
+                return results
+        return []
 
 
 if __name__ == "__main__":

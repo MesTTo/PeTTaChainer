@@ -12,3 +12,9 @@ wheels/
 
 # Scratch MeTTa files
 **/x*.metta
+
+# Generated benchmark artifacts
+artifacts/
+
+# Local design docs (kept out of the published fork)
+docs/

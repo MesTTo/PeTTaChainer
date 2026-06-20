@@ -86,6 +86,29 @@ class TestPeTTaChainer(unittest.TestCase):
 
         self.assertTrue(proofs)
 
+    def test_contextual_query_projects_generated_exception_context(self):
+        handler = PeTTaChainer()
+        handler.add_atoms_no_check(
+            [
+                "(: bird_robin (Bird robin) (STV 1.0 0.99))",
+                "(: bird_polly (Bird polly) (STV 1.0 0.99))",
+                "(: bird_tweety (Bird tweety) (STV 1.0 0.99))",
+                "(: penguin_polly (Penguin polly) (STV 1.0 0.99))",
+                "(: penguin_tweety (Penguin tweety) (STV 1.0 0.99))",
+                "(: fly_robin (Fly robin) (STV 0.95 0.99))",
+                "(: fly_polly (Fly polly) (STV 0.0 0.99))",
+                "(: bird_to_fly (Implication (Premises (Bird $x)) (Conclusions (Fly $x))) (STV 0.95 0.99))",
+            ]
+        )
+
+        result = handler.contextual_query("(: $prf (Fly tweety) $tv)", steps=20, timeout_sec=0)
+
+        self.assertIsInstance(result.proofs, tuple)
+        self.assertIsNotNone(result.projection)
+        self.assertIn("(Fly tweety)", result.projection)
+        self.assertIn("(STV 0", result.projection)
+        self.assertEqual(result.answers[0], result.projection)
+
 
 if __name__ == "__main__":
     unittest.main()
