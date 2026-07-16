@@ -1,9 +1,42 @@
+import inspect
 import unittest
 
 from pettachainer import PeTTaChainer
 
 
 class TestPeTTaChainer(unittest.TestCase):
+    def test_removed_pattern_mining_api_is_absent(self):
+        removed_methods = (
+            "set_pattern_mining_on_add",
+            "enable_pattern_mining_on_add",
+            "disable_pattern_mining_on_add",
+            "materialize_mined_implications",
+        )
+        for method in removed_methods:
+            with self.subTest(method=method):
+                self.assertFalse(hasattr(PeTTaChainer, method))
+
+        self.assertNotIn("mine_patterns", inspect.signature(PeTTaChainer.add_atom).parameters)
+        self.assertNotIn(
+            "mine_patterns", inspect.signature(PeTTaChainer.add_atoms_no_check).parameters
+        )
+
+        handler = PeTTaChainer()
+        self.assertEqual(
+            handler.handler.process_metta_string("!(get-metatype compileadd)"), ["Grounded"]
+        )
+        removed_symbols = (
+            "compileadd-mine",
+            "set-pattern-mining-on-add",
+            "enable-pattern-mining-on-add",
+            "disable-pattern-mining-on-add",
+            "materialize-mined-implications",
+        )
+        for symbol in removed_symbols:
+            with self.subTest(symbol=symbol):
+                metatype = handler.handler.process_metta_string(f"!(get-metatype {symbol})")
+                self.assertEqual(metatype, ["Symbol"])
+
     def test_forward_chain_derives_fact_visible_to_backward_query(self):
         handler = PeTTaChainer()
         handler.add_atom("(: edge_ab (Edge A B) (STV 1.0 1.0))")

@@ -258,8 +258,8 @@ python pettachainer/benchmarks/particle_vs_nat.py --json-out /tmp/particle_bench
 Profile a `.metta` file through the underlying SWI-Prolog invocation that `petta` uses:
 
 ```bash
-./profile_petta.sh tests/testmining.metta
-./profile_petta.sh --mode time tests/testmining.metta
+./profile_petta.sh tests/test_total_implication_aggregate.metta
+./profile_petta.sh --mode time tests/test_total_implication_aggregate.metta
 ./profile_petta.sh --mode perf benchmarks/demo_benchgen_forward_backward_compare.metta
 ```
 

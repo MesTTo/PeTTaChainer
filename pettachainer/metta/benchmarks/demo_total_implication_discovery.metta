@@ -1,12 +1,14 @@
 !(import! &self petta_chainer)
 
-(= (PMBenchListCount ()) 0)
-(= (PMBenchListCount (cons $_x $tail)) (+ 1 (PMBenchListCount $tail)))
+; Measures total-implication discovery across candidate predicates and evidence sizes.
 
-(= (PMBenchPred $idx) (atom_concat PMPred $idx))
-(= (PMBenchTargetPred $kb) (atom_concat PMTarget $kb))
-(= (PMBenchObj $kb $idx) (pm-obj $kb $idx))
-(= (PMBenchQueryObj $kb) (pm-query $kb))
+(= (TIBenchListCount ()) 0)
+(= (TIBenchListCount (cons $_x $tail)) (+ 1 (TIBenchListCount $tail)))
+
+(= (TIBenchPred $idx) (atom_concat TIPred $idx))
+(= (TIBenchTargetPred $kb) (atom_concat TITarget $kb))
+(= (TIBenchObj $kb $idx) (ti-obj $kb $idx))
+(= (TIBenchQueryObj $kb) (ti-query $kb))
 
 (= (TotalEvidenceOr none $tv) $tv)
 (= (TotalEvidenceOr $left $right) (OrFormula $left $right))
@@ -67,78 +69,78 @@
           (ii_total $apr cpu)
           $btv))))
 
-(= (PMBenchAddTarget $kb $idx)
+(= (TIBenchAddTarget $kb $idx)
    (let*
-      (($obj (PMBenchObj $kb $idx))
-       ($target-pred (PMBenchTargetPred $kb)))
+      (($obj (TIBenchObj $kb $idx))
+       ($target-pred (TIBenchTargetPred $kb)))
       (compileadd kb
-         (: (pm-target $idx)
+         (: (ti-target $idx)
             ($target-pred $obj)
             (STV 0.9 0.9)))))
 
-(= (PMBenchAddTargets $kb $idx)
+(= (TIBenchAddTargets $kb $idx)
    (if (<= $idx 0) done
-      (let $_ (PMBenchAddTarget $kb $idx)
-         (PMBenchAddTargets $kb (- $idx 1)))))
+      (let $_ (TIBenchAddTarget $kb $idx)
+         (TIBenchAddTargets $kb (- $idx 1)))))
 
-(= (PMBenchAddPredObj $kb $pred-idx $obj)
-   (let $pred (PMBenchPred $pred-idx)
+(= (TIBenchAddPredObj $kb $pred-idx $obj)
+   (let $pred (TIBenchPred $pred-idx)
       (compileadd kb
-         (: (pm-pred $pred-idx $obj)
+         (: (ti-pred $pred-idx $obj)
             ($pred $obj)
             (STV 0.9 0.9)))))
 
-(= (PMBenchAddPredObjects $kb $pred-idx $obj-idx)
+(= (TIBenchAddPredObjects $kb $pred-idx $obj-idx)
    (if (<= $obj-idx 0) done
       (let*
-         (($obj (PMBenchObj $kb $obj-idx))
-          ($_ (PMBenchAddPredObj $kb $pred-idx $obj)))
-         (PMBenchAddPredObjects $kb $pred-idx (- $obj-idx 1)))))
+         (($obj (TIBenchObj $kb $obj-idx))
+          ($_ (TIBenchAddPredObj $kb $pred-idx $obj)))
+         (TIBenchAddPredObjects $kb $pred-idx (- $obj-idx 1)))))
 
-(= (PMBenchAddPred $kb $pred-idx $obj-count)
-   (let $_history (PMBenchAddPredObjects $kb $pred-idx $obj-count)
-      (let $query-obj (PMBenchQueryObj $kb)
-         (PMBenchAddPredObj $kb $pred-idx $query-obj))))
+(= (TIBenchAddPred $kb $pred-idx $obj-count)
+   (let $_history (TIBenchAddPredObjects $kb $pred-idx $obj-count)
+      (let $query-obj (TIBenchQueryObj $kb)
+         (TIBenchAddPredObj $kb $pred-idx $query-obj))))
 
-(= (PMBenchAddPreds $kb $pred-idx $obj-count)
+(= (TIBenchAddPreds $kb $pred-idx $obj-count)
    (if (<= $pred-idx 0) done
-      (let $_ (PMBenchAddPred $kb $pred-idx $obj-count)
-         (PMBenchAddPreds $kb (- $pred-idx 1) $obj-count))))
+      (let $_ (TIBenchAddPred $kb $pred-idx $obj-count)
+         (TIBenchAddPreds $kb (- $pred-idx 1) $obj-count))))
 
-(= (PMBenchGenerate $kb $pred-count $obj-count)
+(= (TIBenchGenerate $kb $pred-count $obj-count)
    (let*
       (($t1 (current-time))
-        ($_targets (PMBenchAddTargets $kb $obj-count))
-        ($_preds (PMBenchAddPreds $kb $pred-count $obj-count))
+        ($_targets (TIBenchAddTargets $kb $obj-count))
+        ($_preds (TIBenchAddPreds $kb $pred-count $obj-count))
         ($t2 (current-time)))
-      (pmbench-generated
+      (tibench-generated
          (kb $kb)
          (predicates $pred-count)
          (objects $obj-count)
          (facts (+ $obj-count (* $pred-count (+ $obj-count 1))))
          (seconds (- $t2 $t1)))))
 
-(= (PMBenchQuery $kb $pred-count $steps)
+(= (TIBenchQuery $kb $pred-count $steps)
    (let*
       (($t1 (current-time))
-        ($query-obj (PMBenchQueryObj $kb))
-        ($target-pred (PMBenchTargetPred $kb))
+        ($query-obj (TIBenchQueryObj $kb))
+        ($target-pred (TIBenchTargetPred $kb))
         ($results
            (collapse
               (query $steps kb
                  (: $prf ($target-pred $query-obj) $tv))))
         ($t2 (current-time)))
-      (pmbench-query
+      (tibench-query
          (kb $kb)
          (candidate-predicates $pred-count)
          (steps $steps)
          (seconds (- $t2 $t1))
-         (answers (PMBenchListCount $results)))))
+         (answers (TIBenchListCount $results)))))
 
-(= (PMBenchCase $kb $pred-count $obj-count $steps)
-   ((PMBenchGenerate $kb $pred-count $obj-count)
-    (PMBenchQuery $kb $pred-count $steps)))
+(= (TIBenchCase $kb $pred-count $obj-count $steps)
+   ((TIBenchGenerate $kb $pred-count $obj-count)
+    (TIBenchQuery $kb $pred-count $steps)))
 
-!(PMBenchCase pmBench05x10 5 10 80)
-!(PMBenchCase pmBench10x10 10 10 120)
-!(PMBenchCase pmBench20x10 20 10 180)
+!(TIBenchCase tiBench05x10 5 10 80)
+!(TIBenchCase tiBench10x10 10 10 120)
+!(TIBenchCase tiBench20x10 20 10 180)

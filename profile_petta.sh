@@ -38,9 +38,9 @@ Environment overrides:
                    '!(query 100 kb (: $prf (Goal) $tv))'
 
 Examples:
-  ./profile_petta.sh tests/testmining.metta
+  ./profile_petta.sh tests/test_total_implication_aggregate.metta
   ./profile_petta.sh --mode time benchmarks/demo_benchgen_forward_backward_compare.metta
-  ./profile_petta.sh --callers lists:member/2 tests/testmining.metta
+  ./profile_petta.sh --callers lists:member/2 tests/test_total_implication_aggregate.metta
   ./profile_petta.sh --mode perf /abs/path/to/x.metta
   ./profile_petta.sh --expr '!(query 100 kb (: $prf (Goal) $tv))' x2.metta
 EOF

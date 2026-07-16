@@ -18,25 +18,6 @@ If you need an LLM-oriented helper-first spec, use `pettachainer/LLM_RULE_SPEC.m
 !(compileadd kb (: proof-id type tv))
 ```
 
-- Incremental pattern mining on insert is off by default. To enable it for a KB:
-
-```metta
-!(enable-pattern-mining-on-add kb)
-```
-
-This updates mining statistics during `compileadd` without recompiling mined rules on every insert.
-When you want to emit the current mined implication rules, run:
-
-```metta
-!(materialize-mined-implications kb)
-```
-
-- For a one-shot insert that also mines patterns without changing the KB default:
-
-```metta
-!(compileadd-mine kb (: proof-id type tv))
-```
-
 - Queries use:
 
 ```metta
@@ -44,6 +25,16 @@ When you want to emit the current mined implication rules, run:
 ```
 
 `steps` is the search budget.
+
+## Rule Discovery
+
+Rule discovery is expressed as ordinary MeTTa rules. The total-implication example
+uses `FoldAll` to collect positive and negative evidence, then applies the derived
+conditional through a rule whose proof token starts with `ii_total`.
+
+Run `pettachainer/metta/tests/test_total_implication_aggregate.metta` for the
+executable regression case. The scaling example is
+`pettachainer/metta/benchmarks/demo_total_implication_discovery.metta`.
 
 ## Types and Truth Values
 

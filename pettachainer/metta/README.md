@@ -7,7 +7,7 @@ Layout of this folder:
   `import! &self X` against the working directory of the top-level loaded file,
   which is always this folder, so every module is imported relative to here (for
   example `chainer/compile`, `context/context_from_kb`).
-- `chainer/` is the chaining engine: `compile`, `logic_config`, `mining`,
+- `chainer/` is the chaining engine: `compile`, `logic_config`,
   `chainer_utils`, `backward_chainer`, `backward_proof_store`, `forward_chainer`,
   `compiled_query_runtime`, `dist_formulas`, `tv_formulas`, `proof_structure_audit`.
 - `context/` is the πPLN context layer: `context_from_kb`, `context_generation`,
