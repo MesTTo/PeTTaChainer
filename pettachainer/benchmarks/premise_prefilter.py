@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
-import argparse
-import json
 import statistics
-import sys
 import time
-from dataclasses import asdict, dataclass
-from pathlib import Path
+from dataclasses import dataclass
 
+if __package__:
+    from pettachainer.benchmarks.rule_score_cache import (
+        compiled_target_rule_count,
+        parse_scaling_benchmark_args,
+        write_benchmark_json,
+    )
+else:
+    from rule_score_cache import (
+        compiled_target_rule_count,
+        parse_scaling_benchmark_args,
+        write_benchmark_json,
+    )
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
-from pettachainer import PeTTaChainer  # noqa: E402
-from pettachainer.benchmarks.rule_score_cache import (  # noqa: E402
-    compiled_target_rule_count,
-)
+from pettachainer import PeTTaChainer
 
 
 @dataclass(frozen=True)
@@ -102,38 +103,23 @@ def print_table(rows: list[BenchmarkRow]) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
+    rule_counts, queries, repeats, json_out = parse_scaling_benchmark_args(
         description=(
             "Compare one-step backward queries with conservative dead-premise filtering off and on. "
             "Only one rule has a source fact; every other rule has a ground dead premise."
-        )
+        ),
+        default_queries=5,
+        queries_help="Queries per mode and repeat",
     )
-    parser.add_argument("--rules", default="40,80,160,320", help="Comma-separated source rule counts")
-    parser.add_argument("--queries", type=int, default=5, help="Queries per mode and repeat")
-    parser.add_argument("--repeats", type=int, default=3, help="Loaded knowledge bases per rule count")
-    parser.add_argument("--json-out", default="", help="Optional JSON output path")
-    args = parser.parse_args()
-
-    rule_counts = [int(item.strip()) for item in args.rules.split(",") if item.strip()]
-    if not rule_counts or any(count < 1 for count in rule_counts):
-        raise ValueError("--rules must contain positive integers")
-    if args.queries < 1:
-        raise ValueError("--queries must be at least 1")
-    if args.repeats < 1:
-        raise ValueError("--repeats must be at least 1")
 
     warmup = PeTTaChainer()
     build_sparse_problem(warmup, 1)
     time_queries(warmup, 1, False)
     time_queries(warmup, 1, True)
 
-    rows = [benchmark(count, args.queries, args.repeats) for count in rule_counts]
+    rows = [benchmark(count, queries, repeats) for count in rule_counts]
     print_table(rows)
-    if args.json_out:
-        Path(args.json_out).write_text(
-            json.dumps([asdict(row) for row in rows], indent=2) + "\n",
-            encoding="ascii",
-        )
+    write_benchmark_json(rows, json_out)
 
 
 if __name__ == "__main__":

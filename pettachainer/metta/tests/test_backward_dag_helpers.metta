@@ -319,11 +319,16 @@
       ((proof-live? $pid-old) (proof-live? $pid-new) (length (goal-live-proof-ids $agg-gid))))
    (false true 1))
 
+(= (reset-backward-dag-test-state)
+   (progn
+      (clear-backward-state)
+      (change-state! bwd_gid 0)
+      (change-state! bwd_pid 0)
+      true))
+
 !(test
    (let*
-      (($_clear (clear-backward-state))
-       ($_gidreset (change-state! bwd_gid 0))
-       ($_pidreset (change-state! bwd_pid 0))
+      (($_reset (reset-backward-dag-test-state))
        ($gid (ensure-goal-at-depth ((Goal) (kb MAIN ()) $prf $tv) 0))
        ($shared-ev (fact-ev (kb MAIN ()) shared (Source)))
        ($pid-high
@@ -348,9 +353,7 @@
 
 !(test
    (let*
-      (($_clear (clear-backward-state))
-       ($_gidreset (change-state! bwd_gid 0))
-       ($_pidreset (change-state! bwd_pid 0))
+      (($_reset (reset-backward-dag-test-state))
        ($gid (ensure-goal-at-depth ((Goal) (kb MAIN ()) $prf $tv) 0))
        ($ev-a (fact-ev (kb MAIN ()) a (SourceA)))
        ($ev-b (fact-ev (kb MAIN ()) b (SourceB)))

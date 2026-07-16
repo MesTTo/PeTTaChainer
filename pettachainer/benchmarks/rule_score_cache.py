@@ -15,6 +15,34 @@ if str(REPO_ROOT) not in sys.path:
 from pettachainer import PeTTaChainer  # noqa: E402
 
 
+def parse_scaling_benchmark_args(
+    *, description: str, default_queries: int, queries_help: str
+) -> tuple[list[int], int, int, str]:
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("--rules", default="40,80,160,320", help="Comma-separated source rule counts")
+    parser.add_argument("--queries", type=int, default=default_queries, help=queries_help)
+    parser.add_argument("--repeats", type=int, default=3, help="Loaded knowledge bases per rule count")
+    parser.add_argument("--json-out", default="", help="Optional JSON output path")
+    args = parser.parse_args()
+
+    rule_counts = [int(item.strip()) for item in args.rules.split(",") if item.strip()]
+    if not rule_counts or any(count < 1 for count in rule_counts):
+        raise ValueError("--rules must contain positive integers")
+    if args.queries < 1:
+        raise ValueError("--queries must be at least 1")
+    if args.repeats < 1:
+        raise ValueError("--repeats must be at least 1")
+    return rule_counts, args.queries, args.repeats, args.json_out
+
+
+def write_benchmark_json(rows: list[object], json_out: str) -> None:
+    if json_out:
+        Path(json_out).write_text(
+            json.dumps([asdict(row) for row in rows], indent=2) + "\n",
+            encoding="ascii",
+        )
+
+
 @dataclass(frozen=True)
 class BenchmarkRow:
     source_rules: int
@@ -118,38 +146,23 @@ def print_table(rows: list[BenchmarkRow]) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
+    rule_counts, queries, repeats, json_out = parse_scaling_benchmark_args(
         description=(
             "Measure repeated one-step queries that must score every rule sharing a conclusion. "
             "A direct fact answers the query, so proof traversal does not dominate the result."
-        )
+        ),
+        default_queries=3,
+        queries_help="Queries per loaded knowledge base",
     )
-    parser.add_argument("--rules", default="40,80,160,320", help="Comma-separated source rule counts")
-    parser.add_argument("--queries", type=int, default=3, help="Queries per loaded knowledge base")
-    parser.add_argument("--repeats", type=int, default=3, help="Loaded knowledge bases per rule count")
-    parser.add_argument("--json-out", default="", help="Optional JSON output path")
-    args = parser.parse_args()
-
-    rule_counts = [int(item.strip()) for item in args.rules.split(",") if item.strip()]
-    if not rule_counts or any(count < 1 for count in rule_counts):
-        raise ValueError("--rules must contain positive integers")
-    if args.queries < 1:
-        raise ValueError("--queries must be at least 1")
-    if args.repeats < 1:
-        raise ValueError("--repeats must be at least 1")
 
     warmup = PeTTaChainer()
     build_problem(warmup, 1)
     if not warmup.query("(: $proof (ScoreTarget) $tv)", steps=1, timeout_sec=0):
         raise RuntimeError("Warmup query returned no proof")
 
-    rows = [benchmark(count, args.queries, args.repeats) for count in rule_counts]
+    rows = [benchmark(count, queries, repeats) for count in rule_counts]
     print_table(rows)
-    if args.json_out:
-        Path(args.json_out).write_text(
-            json.dumps([asdict(row) for row in rows], indent=2) + "\n",
-            encoding="ascii",
-        )
+    write_benchmark_json(rows, json_out)
 
 
 if __name__ == "__main__":

@@ -577,19 +577,7 @@
        ($_search
           (let $_ignored-search (collapse (if (<= $steps 0) () (search-agenda-heap (+ $steps 1) $agenda0)))
              true)))
-      (chainer-run-result $root-gid
-         (once
-            (let*
-               (($pids-bag (collapse (goal-merged-proof-ids $root-gid)))
-                (($_depth $goal $_expanded $_pending) (goal-by-id $root-gid)))
-               (if (== $pids-bag ())
-                  ()
-                  (if (== (car-atom $pids-bag) ())
-                     ()
-                     (if (goal-has-type-vars? $goal)
-                        (map-flat materialize-result-atom (map-flat proof-output-atom (car-atom $pids-bag)))
-                        (materialize-result-atom
-                           (proof-output-atom (car-atom (car-atom $pids-bag))))))))))))
+      (chainer-run-result $root-gid (once (goal-results-view $root-gid)))))
 
 (= (chainer $steps $goal)
    (let*
