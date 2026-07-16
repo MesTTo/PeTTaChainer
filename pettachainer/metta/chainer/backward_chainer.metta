@@ -405,6 +405,54 @@
          (rule-goal-head-view ($goal $parent-gid)))
       (rule-goal-full-view ($goal $parent-gid))))
 
+(= (backward-premise-prefilter-key $kb)
+   (atom_concat backward_premise_prefilter_ $kb))
+
+(= (set-backward-premise-prefilter $kb $enabled)
+   (change-state! (backward-premise-prefilter-key $kb) $enabled))
+
+(= (backward-premise-prefilter? $goal)
+   (let $kb (compiled-row-kbid $goal)
+      (if (== $kb ()) false
+         (let $enabled
+            (catch (get-state (backward-premise-prefilter-key $kb)))
+            (if-error $enabled false $enabled)))))
+
+(= (prefilter-ground-ordinary-premise? $premise)
+   (if (= $premise (CPU $_fun $_args $_result)) false
+      (if (= $premise ($_type $_kb $_proof $_tv))
+         (== (extract-vars ($_type $_kb)) ())
+         false)))
+
+(= (prefilter-premise-has-direct-proof? $premise)
+   (let $candidate (copy_term $premise)
+      (not
+         (==
+            (collapse (once (direct-goal-results-view 0 $candidate)))
+            ()))))
+
+(= (prefilter-premise-has-rule? $premise)
+   (let $candidate (copy_term $premise)
+      (not
+         (==
+            (collapse (once (rule-goal-view ($candidate prefilter))))
+            ()))))
+
+(= (prefilter-prunes-walk ()) false)
+(= (prefilter-prunes-walk (cons $premise $rest))
+   (if (= $premise (CPU $_fun $_args $_result)) false
+      (if (not (prefilter-ground-ordinary-premise? $premise)) false
+         (if (prefilter-premise-has-rule? $premise) false
+            (if (prefilter-premise-has-direct-proof? $premise)
+               (prefilter-prunes-walk $rest)
+               true)))))
+
+(= (rule-premise-prefilter-prunes? $goal $args)
+   (if (backward-premise-prefilter? $goal)
+      (let $hits (collapse (prefilter-prunes-walk (copy_term $args)))
+         (if (== $hits ()) false (car-atom $hits)))
+      false))
+
 (= (spawn-frontier-heap $agenda $parent-gid $bundle $score $seen $rev-pids)
    (let*
       (($goal (and-bundle-goal $bundle))
@@ -451,17 +499,18 @@
       (premises-expected-confidence (copy_term $args))))
 
 (= (expand-rule-goal-fold $agenda ($rule-id $args $goal $parent-gid))
-   (let*
-      (($expected-score (rule-expected-score $rule-id $goal $args))
-       ($current-score (goal-current-confidence $parent-gid))
-       ($bound (rule-marginal-score $current-score $expected-score))
-       ($bundle (copy_term (make-and-bundle $goal $args))))
-      (spawn-frontier-heap $agenda
-         $parent-gid
-         $bundle
-         $bound
-         ()
-         ())))
+   (if (rule-premise-prefilter-prunes? $goal $args) $agenda
+      (let*
+         (($expected-score (rule-expected-score $rule-id $goal $args))
+          ($current-score (goal-current-confidence $parent-gid))
+          ($bound (rule-marginal-score $current-score $expected-score))
+          ($bundle (copy_term (make-and-bundle $goal $args))))
+         (spawn-frontier-heap $agenda
+            $parent-gid
+            $bundle
+            $bound
+            ()
+            ()))))
 
 (= (expand-goal-heap $agenda $steps $score $gid)
    (let*

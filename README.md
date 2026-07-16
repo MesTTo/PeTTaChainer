@@ -314,6 +314,16 @@ Each one-step query has a direct answer and also matches every generated rule. T
 rule loading separately from first and repeated query time, so moving score calculation from queries
 to rule compilation remains visible.
 
+Compare conservative premise filtering on a sparse same-head rule set:
+
+```bash
+.venv/bin/python pettachainer/benchmarks/premise_prefilter.py --rules 40,80,160,320 --queries 5 --repeats 3
+```
+
+The benchmark alternates filtered and unfiltered runs on the same loaded knowledge bases and rejects
+any answer difference. One rule has a supporting source fact. Every other rule has a ground premise
+with neither a fact nor a possible rule conclusion.
+
 Optional JSON export:
 
 ```bash
@@ -387,6 +397,25 @@ result = handler.query("(: $prf (Path A C) $tv)", timeout_sec=0)
 
 handler.forward_chain(steps=1, term="(Edge A B)")
 ```
+
+## Python API: Backward Premise Filtering
+
+```python
+from pettachainer import PeTTaChainer
+
+handler = PeTTaChainer()
+handler.set_backward_premise_prefilter(True)
+```
+
+The opt-in filter skips a candidate rule when its ground ordinary premise prefix reaches a term with
+no matching direct fact and no compiled rule that can conclude it. It uses the same contextual,
+wildcard, and open-head lookups as the backward chainer. It advances only across direct facts. A CPU,
+non-ground, or rule-derivable premise stops the check. The setting belongs to this handler's knowledge
+base and is copied into timeout workers.
+
+Filtering does not remove a provable branch from a fixed knowledge base. With a finite step budget it
+can return proofs that an unfiltered search does not reach because dead branches no longer consume
+steps. The MeTTa entry point is `(set-backward-premise-prefilter $kb $enabled)`.
 
 ## License
 

@@ -26,6 +26,18 @@ If you need an LLM-oriented helper-first spec, use `pettachainer/LLM_RULE_SPEC.m
 
 `steps` is the search budget.
 
+Optional premise filtering removes provably dead rule branches before they consume that budget:
+
+```metta
+!(set-backward-premise-prefilter kb true)
+```
+
+The filter checks a ground ordinary premise prefix with the backward chainer's direct-fact,
+contextual wildcard, and rule-conclusion lookups. It advances only across direct facts. A `CPU`,
+non-ground, or rule-derivable premise stops the check. Filtering can expose more proofs within a
+fixed step budget, but it does not remove a provable branch from a fixed knowledge base. The default
+is `false` for each knowledge base.
+
 ## Rule Discovery
 
 Rule discovery is expressed as ordinary MeTTa rules. The total-implication example

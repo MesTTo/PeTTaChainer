@@ -55,11 +55,13 @@ def _query_worker(
     steps: int,
     atom: str,
     logic_config_path: Optional[str],
+    backward_premise_prefilter: bool,
     conn,
 ):
     try:
         handler = PeTTaChainer(logic_config=logic_config_path)
         handler.kb = kb
+        handler.set_backward_premise_prefilter(backward_premise_prefilter)
         if added_atoms:
             handler.add_atoms_no_check(added_atoms)
         atoms = handler.handler.process_metta_string(f"!(query {steps} {kb} {atom})")
@@ -114,6 +116,7 @@ class PeTTaChainer:
         self.kb = f"kb{uuid.uuid4().hex}"
         self._added_atoms: List[str] = []
         self._logic_config_path: Optional[Path] = None
+        self._backward_premise_prefilter = False
         base_dir = Path(__file__).resolve().parent
 
         if not LOADEDLIB:
@@ -247,6 +250,17 @@ class PeTTaChainer:
             f"!(forward-chain-from {steps} {self.kb} {evaluated_term})"
         )
 
+    def set_backward_premise_prefilter(self, enabled: bool):
+        """Toggle conservative dead-premise pruning for this knowledge base."""
+
+        if not isinstance(enabled, bool):
+            raise TypeError("enabled must be a bool")
+        self._backward_premise_prefilter = enabled
+        value = str(enabled).lower()
+        return self.handler.process_metta_string(
+            f"!(set-backward-premise-prefilter {self.kb} {value})"
+        )
+
     def query(self, atom: str, steps: int = 100, timeout_sec: Optional[float] = 10) -> List[str]:
         evaluated_query = self._evaluate(atom)
         self._validate("query", atom, evaluated_query, check_query)
@@ -280,6 +294,7 @@ class PeTTaChainer:
                 steps,
                 evaluated_query,
                 str(self._logic_config_path) if self._logic_config_path else None,
+                self._backward_premise_prefilter,
                 child_conn,
             ),
             daemon=True,

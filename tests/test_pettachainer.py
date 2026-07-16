@@ -104,6 +104,86 @@ class TestPeTTaChainer(unittest.TestCase):
 
         self.assertEqual(result, ["false"])
 
+    def test_backward_premise_prefilter_is_kb_scoped_and_reaches_timeout_worker(self):
+        handler = PeTTaChainer()
+        other = PeTTaChainer()
+        handler.add_atoms_no_check(
+            ["(: filter_live (FilterInput live) (STV 1.0 1.0))"]
+            + [
+                "(: filter_live_rule "
+                "(Implication (Premises (FilterInput live)) (Conclusions (FilterOutput))) "
+                "(STV 1.0 0.2))"
+            ]
+            + [
+                f"(: (no_inverse filter_dead_{index}) "
+                f"(Implication (Premises (FilterInput dead-{index})) "
+                "(Conclusions (FilterOutput))) (STV 1.0 1.0))"
+                for index in range(8)
+            ]
+        )
+
+        handler.set_backward_premise_prefilter(False)
+        self.assertFalse(handler.query("(: $prf (FilterOutput) $tv)", steps=4, timeout_sec=0))
+
+        handler.set_backward_premise_prefilter(True)
+        self.assertTrue(handler.query("(: $prf (FilterOutput) $tv)", steps=4, timeout_sec=0))
+        self.assertTrue(handler.query("(: $prf (FilterOutput) $tv)", steps=4, timeout_sec=5))
+        self.assertEqual(
+            handler.handler.process_metta_string(
+                f"!(backward-premise-prefilter? ((Probe) ({handler.kb} MAIN Nil) $proof $tv))"
+            ),
+            ["true"],
+        )
+        self.assertEqual(
+            other.handler.process_metta_string(
+                f"!(backward-premise-prefilter? ((Probe) ({other.kb} MAIN Nil) $proof $tv))"
+            ),
+            ["false"],
+        )
+        with self.assertRaisesRegex(TypeError, "bool"):
+            handler.set_backward_premise_prefilter(1)
+
+    def test_backward_premise_prefilter_randomized_answer_equivalence(self):
+        rng = random.Random(20260718)
+        handler = PeTTaChainer()
+        item_count = 12
+        present = {index for index in range(item_count) if rng.random() < 0.6}
+        handler.add_atoms_no_check(
+            [
+                f"(: filter_base_{index} (FilterBase {index}) (STV 1.0 1.0))"
+                for index in sorted(present)
+            ]
+            + [
+                f"(: (no_inverse filter_middle_{index}) "
+                f"(Implication (Premises (FilterBase {index})) "
+                f"(Conclusions (FilterMiddle {index}))) (STV 1.0 0.9))"
+                for index in range(item_count)
+            ]
+            + [
+                f"(: (no_inverse filter_goal_{index}) "
+                f"(Implication (Premises (FilterMiddle {index})) "
+                f"(Conclusions (FilterGoal {index}))) (STV 1.0 0.8))"
+                for index in range(item_count)
+            ]
+        )
+
+        handler.set_backward_premise_prefilter(False)
+        without_filter = [
+            set(handler.query(f"(: $prf (FilterGoal {index}) $tv)", steps=50, timeout_sec=0))
+            for index in range(item_count)
+        ]
+        handler.set_backward_premise_prefilter(True)
+        with_filter = [
+            set(handler.query(f"(: $prf (FilterGoal {index}) $tv)", steps=50, timeout_sec=0))
+            for index in range(item_count)
+        ]
+
+        self.assertEqual(with_filter, without_filter)
+        self.assertEqual(
+            [bool(answers) for answers in with_filter],
+            [index in present for index in range(item_count)],
+        )
+
     def test_default_logic_keeps_pln_or_semantics(self):
         handler = PeTTaChainer()
         handler.add_atom("(: a (A) (STV 1.0 1.0))")
