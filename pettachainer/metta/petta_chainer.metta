@@ -31,6 +31,7 @@
 (= (compileadd $kb $stmt)
    (let*
       (($stmt1 (materialize-stmt-lambdas $stmt))
+        ($_evidence (register-user-rule-evidence! $kb $stmt1))
         ($atoms (collapse (mm2compile $kb $stmt1)))
         ($iatoms (list_to_set (map-flat internalize-proof-structure $atoms)))
         ($eatoms (map-flat externalize-proof-structure $iatoms))

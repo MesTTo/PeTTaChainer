@@ -151,6 +151,12 @@ store creates one representative whose children and evidence are exactly the bra
 the merge. A downstream rule therefore runs once against the revised subgoal instead of once per
 proof path, which prevents shared rules from inflating confidence.
 
+Facts and user-authored implication rules contribute separate provenance tokens. A rule shared by
+two derivations therefore makes those derivations dependent even when their fact evidence differs.
+Query assumptions and compiler-generated helper rules do not contribute evidence. Mark a named
+rule with `!(mark-logic-rule ruleName)` when it is a logical schema rather than uncertain support;
+the rule remains executable but no longer contributes a rule-evidence token.
+
 ## Benchmarks
 
 Run the full showcase:

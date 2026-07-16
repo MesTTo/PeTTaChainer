@@ -3,6 +3,8 @@
 !(import! &self (library lib_he))
 !(import! &self chainer/logic_config)
 
+!(bind! &rule_evidence_names (new-space))
+
 (= (nextctx)
    (let*
       (($mn (catch (get-state ctxid)))
@@ -499,6 +501,46 @@
       (let $head (car-atom $Type)
          (and (not (is-var $head)) (bidirectional-implication-form? $head)))
       false))
+
+(= (rule-evidence-base-name $prf)
+   (if (is-var $prf) $prf
+      (case $prf (
+         ((bi-forward $name) (rule-evidence-base-name $name))
+         ((bi-backward $name) (rule-evidence-base-name $name))
+         ((no_inverse $name) (rule-evidence-base-name $name))
+         ($name $name)))))
+
+(= (rule-evidence-kbid $kb)
+   (if (= $kb ($kbid $_ctx $_vars)) $kbid $kb))
+
+(= (rule-evidence-registered? $kb $name)
+   (let $kbid (rule-evidence-kbid $kb)
+      (not
+         (==
+            (collapse
+               (once
+                  (match &rule_evidence_names ($kbid $name) true)))
+            ()))))
+
+(= (register-rule-evidence! $kb $prf)
+   (let*
+      (($kbid (rule-evidence-kbid $kb))
+       ($name (rule-evidence-base-name $prf)))
+      (if (is-var $name) ()
+         (if (rule-evidence-registered? $kbid $name) ()
+            (add-atom &rule_evidence_names ($kbid $name))))))
+
+(= (evidence-bearing-rule-type? $type)
+   (if (= $type (Implication (cons Premises $_premises) (cons Conclusions $_conclusions)))
+      true
+      (bidirectional-implication-type? $type)))
+
+(= (register-user-rule-evidence! $kb $stmt)
+   (if (= $stmt (: $prf $type $_tv))
+      (if (evidence-bearing-rule-type? $type)
+         (register-rule-evidence! $kb $prf)
+         ())
+      ()))
 
 (= (compile-query-adds (: $kb $prf $type $tv))
    (collapse (compile-adapter-chain query (: $kb $prf $type $tv))))

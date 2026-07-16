@@ -11,7 +11,8 @@ Layout of this folder:
   `chainer_utils`, `backward_chainer`, `backward_proof_store`, `forward_chainer`,
   `compiled_query_runtime`, `dist_formulas`, `tv_formulas`, `proof_structure_audit`.
   `backward_proof_store` groups equivalent subgoal outputs and exposes one merged
-  representative to rule continuations and aggregates.
+  representative to rule continuations and aggregates. User-authored implications
+  contribute rule provenance unless their names are registered with `mark-logic-rule`.
 - `context/` is the πPLN context layer: `context_from_kb`, `context_generation`,
   the pure-MeTTa and Prolog beams, the inference-control modules, and the Prolog
   beam source `context_generation_beam.pl`.

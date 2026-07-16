@@ -112,6 +112,25 @@ Rules are implications with explicit premises and conclusions:
     (STV s c)))
 ```
 
+`compileadd` records the name of each user-authored implication as rule evidence. Reusing the same
+rule in two proof paths makes those paths dependent during proof merging. Query assumptions and
+compiler-generated helper rules are excluded.
+
+Use `mark-logic-rule` before or after `compileadd` when a rule is a logical schema whose application
+should not count as uncertain support:
+
+```metta
+!(mark-logic-rule modusPonens)
+!(compileadd kb (: modusPonens
+    (Implication
+        (Premises (P $x))
+        (Conclusions (Q $x)))
+    (STV 1.0 1.0)))
+```
+
+The marked rule remains available to the chainer. Its proof applications omit the `(rule-ev ...)`
+token, so independently supported uses can still revision-merge.
+
 ## Built-in Premise Forms
 
 ### 1) Plain predicates

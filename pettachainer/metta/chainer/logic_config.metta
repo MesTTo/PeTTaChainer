@@ -38,6 +38,14 @@
    (let $matches (collapse (match &logic_config (rule-form $head BidirectionalImplication) true))
       (not (== $matches ()))))
 
+(= (logic-rule? $name)
+   (let $matches (collapse (match &logic_config (logic-rule $name) true))
+      (not (== $matches ()))))
+
+(= (mark-logic-rule $name)
+   (if (logic-rule? $name) ()
+      (add-atom &logic_config (logic-rule $name))))
+
 !(clear-logic-config)
 !(set-logic-name PLN)
 !(set-compound-connective And All ProjectAll)

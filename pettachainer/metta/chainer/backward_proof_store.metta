@@ -360,7 +360,9 @@
 
 (= (leaf-evidence-for-result $result)
    (if (= $result ($type ($kbid $_ctx $_vars) $prf $_tv))
-      (if (contains-hash? $type) () ((fact-ev ($kbid $_ctx $_vars) $prf $type)))
+      (if (or (contains-hash? $type) (assumption-proof? $prf))
+         ()
+         ((fact-ev ($kbid $_ctx $_vars) $prf $type)))
       ()))
 
 (= (proof-overlap-dominates-score? $old-ev $old-score $new-ev $new-score)
@@ -400,12 +402,39 @@
                true
                (classify-goal-proof-candidate-pids $open $outkey $ev $score (car-atom $pids-bag)))))))
 
+(= (rule-application-name $prf)
+   (if (is-expr $prf)
+      (let $head (car-atom $prf)
+         (if (is-var $head) $head
+            (case $head (
+               ((inverted $name with $_premise-a $_premise-b)
+                  (rule-evidence-base-name $name))
+               ((bi-forward $name) (rule-evidence-base-name $name))
+               ((bi-backward $name) (rule-evidence-base-name $name))
+               ($name (rule-evidence-base-name $name))))))
+      (rule-evidence-base-name $prf)))
+
+(= (rule-application-evidence $kb $prf)
+   (if (= $kb ($kbid $_ctx $_vars))
+      (let $name (rule-application-name $prf)
+         (if (is-var $name) ()
+            (if (logic-rule? $name) ()
+               (if (rule-evidence-registered? $kbid $name)
+                  ((rule-ev $kbid $name))
+                  ()))))
+      ()))
+
 (= (proof-candidate-stored-evidence $candidate)
    (case $candidate (
-      ((proof-candidate (rule ($_type $_kb $prf $_tv)) $_score $ev $_children)
-         (if (proof-term-contains-negated? $prf)
-            (list_to_set (once (proof-term-evidence-list-mode proof-walk-in-kb $prf)))
-            $ev))
+      ((proof-candidate (rule ($_type $kb $prf $_tv)) $_score $ev $_children)
+         (let*
+            (($base
+                (if (proof-term-contains-negated? $prf)
+                   (list_to_set (once (proof-term-evidence-list-mode proof-walk-in-kb $prf)))
+                   $ev))
+             ($rule-ev (rule-application-evidence $kb $prf)))
+            (if (== $rule-ev ()) $base
+               (list_to_set (append $base $rule-ev)))))
       ((proof-candidate $_kind $_score $ev $_children) $ev))))
 
 (= (normalize-proof-candidate-evidence (proof-candidate $kind $score $ev $children))
