@@ -26,6 +26,63 @@
 
 !(test (term-confidence (CPU LikelierThanFormula ((STV 0.8 0.4) (STV 0.9 0.7)) $out)) 0.4)
 
+!(test
+   (collapse (cpu-expected-tv MpFormula ((STV 0.8 0.7) (STV 0.6 0.9))))
+   ((STV 0.48 0.42)))
+
+!(test
+   (collapse (cpu-expected-tv AndFormula ((STV 0.8 0.7) (STV 0.6 0.9))))
+   ((STV 0.48 0.7)))
+
+!(test
+   (collapse (cpu-expected-tv OrFormula ((STV 0.8 0.7) (STV 0.6 0.9))))
+   ((STV 0.9199999999999999 0.7)))
+
+!(test
+   (collapse (cpu-expected-tv LikelierThanFormula ((STV 0.8 0.7) (STV 0.6 0.9))))
+   ((STV 0.20000000000000007 0.7)))
+
+!(test
+   (collapse
+      (cpu-expected-tv TotalMpFormula
+         ((STV 0.4 0.8) (STV 0.9 0.6) (STV 0.2 0.7))))
+   ((STV 0.48000000000000004 0.6599999999999999)))
+
+!(test
+   (let $hits
+      (collapse
+         (cpu-expected-tv TotalMpConclusionFormula
+            (expectedTvKb (ExpectedTvA) (ExpectedTvB)
+               (STV 0.4 0.8) (STV 0.9 0.6) (STV 0.2 0.7))))
+      (car-atom (car-atom $hits)))
+   TotalMpFormula)
+
+!(test
+   (collapse (cpu-expected-tv NotFormula ((STV 0.8 0.7))))
+   ((STV 0.19999999999999996 0.7)))
+
+!(test
+   (collapse (cpu-expected-tv NotFormula ($unknown)))
+   ((STV 1.0 1.0)))
+
+!(test
+   (collapse
+      (cpu-expected-tv InversionFormula
+         ((STV 0.4 0.8) (STV 0.6 0.7) (STV 0.5 0.9))))
+   ((STV 0.33333333333333337 0.63)))
+
+!(test
+   (collapse (cpu-expected-tv InversionFormula ($a $b (STV 0.5 0.9))))
+   ((STV 1.0 0.81)))
+
+!(test
+   (collapse (cpu-expected-tv () ((STV 0.8 0.7) (STV 0.6 0.9))))
+   ((() (STV 0.8 0.7) (STV 0.6 0.9))))
+
+!(test (collapse (cpu-expected-tv UnknownFormula ((STV 0.8 0.7)))) (()))
+
+!(test (collapse (cpu-expected-tv MpFormula ((STV 0.8 0.7)))) ())
+
 !(test (term-confidence (CPU InversionFormula ($a $b (STV 0.8 0.632121)) $out)) 0.5689089)
 
 !(test (InversionFormula (STV 0.2 1.0) (STV 0.8 1.0) (STV 0.8 0.9)) (STV 0.20000000000000004 0.81))

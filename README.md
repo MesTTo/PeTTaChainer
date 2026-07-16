@@ -304,6 +304,16 @@ Run the bounded priority queue benchmark:
 
 Add `--compare-pruning` to compare pruning enabled and disabled within the same checkout.
 
+Run the backward rule-score benchmark:
+
+```bash
+.venv/bin/python pettachainer/benchmarks/rule_score_cache.py --rules 40,80,160,320 --queries 3 --repeats 3
+```
+
+Each one-step query has a direct answer and also matches every generated rule. The benchmark reports
+rule loading separately from first and repeated query time, so moving score calculation from queries
+to rule compilation remains visible.
+
 Optional JSON export:
 
 ```bash

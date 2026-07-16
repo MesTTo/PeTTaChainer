@@ -16,31 +16,35 @@
 
 (= (cpu-expected-tv $fun $args)
    (if (== $fun TotalMpConclusionFormula)
-      (let*
-         ((($kb $premise $conclusion $a $ba $fallback) $args)
-           ($res
-              (reduce
-                 (reduce
-                    (cons $fun
-                       ($kb $premise $conclusion
-                          (normalize-expected-tv $a)
-                          (normalize-expected-tv $ba)
-                          (normalize-expected-tv $fallback)))))))
-         $res)
+      (let ($kb $premise $conclusion $a $ba $fallback) $args
+         (TotalMpConclusionFormula
+            $kb
+            $premise
+            $conclusion
+            (normalize-expected-tv $a)
+            (normalize-expected-tv $ba)
+            (normalize-expected-tv $fallback)))
       (if (== $fun TotalMpFormula)
-         (let*
-         ((($a $ba $bna) $args)
-           ($res
-              (reduce
-                 (reduce
-                    (cons $fun
-                       ((normalize-expected-tv $a) (normalize-expected-tv $ba) (normalize-expected-tv $bna)))))))
-         $res)
-      (if (is-member $fun (() MpFormula AndFormula OrFormula LikelierThanFormula))
-      (let*
-         ((($a $b) $args)
-           ($res (reduce (reduce (cons $fun ((normalize-expected-tv $a) (normalize-expected-tv $b)))))))
-         $res)
+         (let ($a $ba $bna) $args
+            (TotalMpFormula
+               (normalize-expected-tv $a)
+               (normalize-expected-tv $ba)
+               (normalize-expected-tv $bna)))
+      (if (== $fun MpFormula)
+         (let ($a $b) $args
+            (MpFormula (normalize-expected-tv $a) (normalize-expected-tv $b)))
+      (if (== $fun AndFormula)
+         (let ($a $b) $args
+            (AndFormula (normalize-expected-tv $a) (normalize-expected-tv $b)))
+      (if (== $fun OrFormula)
+         (let ($a $b) $args
+            (OrFormula (normalize-expected-tv $a) (normalize-expected-tv $b)))
+      (if (== $fun LikelierThanFormula)
+         (let ($a $b) $args
+            (LikelierThanFormula (normalize-expected-tv $a) (normalize-expected-tv $b)))
+      (if (== $fun ())
+         (let ($a $b) $args
+            (cons $fun ((normalize-expected-tv $a) (normalize-expected-tv $b))))
       (if (== $fun NotFormula)
          (let $a (car-atom $args)
             (if (is-var $a)
@@ -57,9 +61,9 @@
                  ($res
                     (if (or (is-var $a) (is-var $b))
                        (STV 1.0 (* (min-atom ((tv-confidence $na) (tv-confidence $nb) (tv-confidence $nab))) 0.9))
-                       (reduce (reduce (cons $fun ($na $nb $nab)))))))
+                       (InversionFormula $na $nb $nab))))
                $res)
-            ()))))))
+            ()))))))))))
 
 (= (first-cpu-expected-tv $fun $args)
    (let $res (let $hits (collapse (cpu-expected-tv $fun $args)) (if (== $hits ()) () (car-atom $hits)))

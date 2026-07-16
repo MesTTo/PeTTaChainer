@@ -41,6 +41,11 @@
       (next-search-id ruleid)
       (+ 1000000000 (next-search-id bwd_tmp_ruleid))))
 
+(= (store-rule-expected-score! $backend $id $args)
+   (let $hits (collapse (premises-expected-confidence (copy_term $args)))
+      (if (== $hits ()) ()
+         (kb-add-atom $backend rule_expected ($id (car-atom $hits))))))
+
 (= (compiled-row-kbid $row)
    (if (= $row ($_type ($kbid $_ctx $_vars) $_proof $_tv)) $kbid ()))
 
@@ -58,6 +63,7 @@
            ($_2 (kb-add-atom $backend ccls_index ($ccls $id)))
            ($_3 (kb-add-ccl-head-index $backend $id $ccls))
            ($_4 (kb-add-atom $backend rules ($id $ccls $args)))
+           ($_expected (store-rule-expected-score! $backend $id $args))
            ($_kb-index
               (if (and (== $backend live) (not (== $kbid ())))
                  (kb-add-atom $backend rule_kb_index ($kbid $id))
@@ -97,6 +103,13 @@
             (remove-atom rule_kb_index ($kbid $id))))
       ()))
 
+(= (remove-rule-expected-scores! $id)
+   (let $_removed
+      (collapse
+         (match rule_expected ($id $score)
+            (remove-atom rule_expected ($id $score))))
+      ()))
+
 (= (remove-live-rule! $id)
    (let $_rows
       (collapse
@@ -111,7 +124,8 @@
                       (remove-atom ccls_head_index ($head-key $id))))
                 ($_rule (remove-atom rules ($id $conclusion $premises))))
                ())))
-      (remove-rule-kb-indexes! $id)))
+      (let $_expected (remove-rule-expected-scores! $id)
+         (remove-rule-kb-indexes! $id))))
 
 (= (remove-kb-rules! $kb)
    (let $ids

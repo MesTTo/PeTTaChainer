@@ -8,10 +8,10 @@
 !(assertzPredicate (Predicate (arity get_from_heap 4)))
 !(assertzPredicate (Predicate (arity heap_size 2)))
 
-!(import! &self chainer/chainer_utils)
-!(import! &self chainer/forward_chainer)
 !(import! &self chainer/dist_formulas)
 !(import! &self chainer/tv_formulas)
+!(import! &self chainer/chainer_utils)
+!(import! &self chainer/forward_chainer)
 !(import! &self chainer/compiled_query_runtime)
 !(import! &self chainer/backward_proof_store)
 !(import! &self chainer/backward_chainer)

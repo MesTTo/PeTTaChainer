@@ -352,7 +352,7 @@
 (= (rule-goal-head-view-for-key ($goal $parent-gid) $key)
    (match ccls_head_index ($key $rule-id)
       (match rules ($rule-id $goal $args)
-         ($args $goal $parent-gid))))
+         ($rule-id $args $goal $parent-gid))))
 
 (= (rule-goal-head-view ($goal $parent-gid))
    (let $key (forward-indexable-premise-key $goal)
@@ -372,7 +372,7 @@
 (= (rule-goal-full-view ($goal $parent-gid))
    (match ccls_index ($goal $rule-id)
       (match rules ($rule-id $goal $args)
-         ((contextualize-rule-args $goal $args) $goal $parent-gid))))
+         ($rule-id (contextualize-rule-args $goal $args) $goal $parent-gid))))
 
 (= (same-var-in-list? $_var ()) false)
 (= (same-var-in-list? $var (cons $head $tail))
@@ -442,9 +442,17 @@
             $agenda
             $rule-rows))))
 
-(= (expand-rule-goal-fold $agenda ($args $goal $parent-gid))
+(= (rule-expected-score $rule-id $goal $args)
+   (if (if (= $goal ($_type $_kb $_proof $tv)) (is-var $tv) false)
+      (let $hits (collapse (match rule_expected ($rule-id $score) $score))
+         (if (== $hits ())
+            (premises-expected-confidence (copy_term $args))
+            (car-atom $hits)))
+      (premises-expected-confidence (copy_term $args))))
+
+(= (expand-rule-goal-fold $agenda ($rule-id $args $goal $parent-gid))
    (let*
-      (($expected-score (premises-expected-confidence (copy_term $args)))
+      (($expected-score (rule-expected-score $rule-id $goal $args))
        ($current-score (goal-current-confidence $parent-gid))
        ($bound (rule-marginal-score $current-score $expected-score))
        ($bundle (copy_term (make-and-bundle $goal $args))))
