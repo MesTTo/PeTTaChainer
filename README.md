@@ -177,6 +177,26 @@ Exact statement re-adds are suppressed, while rules with different names or trut
 distinct. Register specializing predicates after importing the selected logic configuration and
 before adding structural rules.
 
+Named statements can be removed between query or chaining operations:
+
+```python
+removed = handler.remove_statement("symmetricFriend")
+```
+
+The return value is the number of matching source statements in this handler's knowledge base.
+Removal is scoped by knowledge base and accepts ground proof terms such as
+`(no_inverse symmetricRule)`. PeTTaChainer clears that knowledge base's facts, compiled rules,
+lookup indexes, evidence registrations, specialization state, and forward agenda generation. It
+then recompiles the remaining source statements in their original order. Forward-derived and
+query-materialized facts are discarded, while lower-level rows added with `add-to-kb` are replayed.
+Backward queries reflect the change immediately. Call `forward_chain` again when materialized
+forward results are needed.
+
+The rebuild is linear in the stored source program. It follows the rematerialization baseline used
+for deductive-database deletion rather than guessing dependencies from proof-token syntax. See
+[Maintenance of Datalog Materialisations Revisited](https://www.cs.ox.ac.uk/people/boris.motik/pubs/mnph19maintenance-revisited.pdf)
+for the delete/rederive alternatives.
+
 When several proofs share facts but have disjoint remaining evidence, the proof store emits
 `merge/lifting`. It temporarily factors the common facts out, revision-merges the residual total-MP
 branches, then applies the common facts once. The merge is limited to proof paths made from facts,
@@ -324,6 +344,22 @@ check_stmt(stmt_eval)
 query_eval = handler.evaluate_query("(: $prf (Dog fido) $tv)")
 check_query(query_eval)
 ```
+
+## Python API: Statement Removal
+
+```python
+from pettachainer import PeTTaChainer
+
+handler = PeTTaChainer()
+handler.add_atom("(: old_score (Score item 0.4) (STV 1.0 1.0))")
+
+assert handler.remove_statement("old_score") == 1
+handler.add_atom("(: old_score (Score item 0.8) (STV 1.0 1.0))")
+```
+
+`remove_statement` requires a ground MeTTa proof term. It removes every `compileadd` source with
+that name from this handler's knowledge base and refreshes the source list used by timeout workers
+and contextual queries.
 
 ## Python API: Forward Chaining
 

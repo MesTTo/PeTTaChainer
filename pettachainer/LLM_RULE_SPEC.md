@@ -56,6 +56,19 @@ A matching fact such as `(: symmetricFriend (Symmetric Friend) (STV 1.0 1.0))` g
 the rule. Do not register the predicate if the rule should remain generic and use variable-head
 lookup.
 
+## Removing a Statement
+
+Use the exact ground proof term and knowledge base:
+
+```metta
+!(remove-compiled-statement kb factName)
+!(remove-compiled-statement kb (no_inverse ruleName))
+```
+
+The operation removes all source statements with that name, invalidates derived materialization,
+and recompiles the remaining source statements. It returns the number removed. Use it between
+query or chaining operations.
+
 ## Premise Helpers You Can Use
 
 ### Compute

@@ -15,6 +15,8 @@ Layout of this folder:
   contribute rule provenance unless their names are registered with `mark-logic-rule`.
   Predicates registered with `set-specializing-predicate` ground structural rule
   templates against matching facts and emit concrete-head rules in either add order.
+  `compileadd` records source events per knowledge base. Named removal clears the
+  compiled KB and replays the remaining events, which also invalidates derived facts.
   It also emits `merge/lifting` when common fact evidence can be factored out of
   otherwise independent total-MP proof paths.
 - `context/` is the πPLN context layer: `context_from_kb`, `context_generation`,

@@ -167,6 +167,33 @@ triggers, including repeated triggers with the same predicate.
 Ground trigger premises are not specialized again. A rule whose trigger predicate was not
 registered follows the normal variable-head path.
 
+### Removing named statements
+
+`remove-compiled-statement` removes every source statement with an exact proof name from one
+knowledge base and returns the number removed:
+
+```metta
+!(compileadd kb (: oldScore (Score item 0.4) (STV 1.0 1.0)))
+!(remove-compiled-statement kb oldScore)
+; 1
+```
+
+The name must be a ground term. Wrapped proof IDs are supported:
+
+```metta
+!(remove-compiled-statement kb (no_inverse oldRule))
+```
+
+Removal clears the selected knowledge base's facts, compiled rule variants, rule and premise
+indexes, wildcard rows, implication index, rule-evidence registration, specialization templates,
+and forward agenda generation. The compiler then replays the remaining `compileadd` statements and
+lower-level `add-to-kb` events in their original order. Other knowledge bases are unchanged.
+
+Forward-derived and `query-materialize` facts are removed because they may depend on the deleted
+source. Backward queries use the rebuilt rules immediately. Run `forward-chain` again to restore
+forward materialization. The rebuild uses the currently loaded logic configuration, so load and
+configure the logic before adding or removing statements.
+
 ### Shared-fact proof merging
 
 Two conclusions can share fact evidence without being duplicate proofs. For example, two separate

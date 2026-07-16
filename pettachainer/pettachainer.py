@@ -167,6 +167,45 @@ class PeTTaChainer:
         self._added_atoms.extend(atoms)
         return result
 
+    def remove_statement(self, atom_name: str) -> int:
+        """Remove every statement with this proof name from the current KB.
+
+        PeTTaChainer clears the KB's compiled rows and rematerializes the remaining
+        source statements. This also invalidates forward-derived facts and compiler
+        indexes that depend on the removed statement.
+        """
+
+        if not atom_name.strip():
+            raise ValueError("Statement name must be a ground MeTTa term")
+        try:
+            evaluated_name = self._evaluate(atom_name)
+        except Exception as exc:
+            raise ValueError("Statement name must be a ground MeTTa term") from exc
+        ground = _as_list(
+            self.handler.process_metta_string(
+                f"!(== (extract-vars {evaluated_name}) ())"
+            )
+        )
+        if not any(str(value).strip().lower() == "true" for value in ground):
+            raise ValueError("Statement name must be a ground MeTTa term")
+
+        raw_result = _query_results(
+            self.handler.process_metta_string(
+                f"!(remove-compiled-statement {self.kb} {evaluated_name})"
+            )
+        )
+        removed = int(str(raw_result[0]).strip()) if raw_result else 0
+        if removed:
+            self._added_atoms = [
+                str(atom).strip()
+                for atom in _query_results(
+                    self.handler.process_metta_string(
+                        f"!(source-statements {self.kb})"
+                    )
+                )
+            ]
+        return removed
+
     evaluate_statement = _evaluate
     evaluate_query = _evaluate
 

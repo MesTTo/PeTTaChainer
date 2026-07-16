@@ -1,4 +1,5 @@
 import inspect
+import random
 import unittest
 
 from pettachainer import PeTTaChainer
@@ -141,6 +142,97 @@ class TestPeTTaChainer(unittest.TestCase):
         self.assertIn("(Fly tweety)", result.projection)
         self.assertIn("(STV 0", result.projection)
         self.assertEqual(result.answers[0], result.projection)
+
+    def test_remove_statement_rebuilds_replay_state(self):
+        handler = PeTTaChainer()
+        handler.add_atoms_no_check(
+            [
+                "(: remove_seed (RemoveSeed) (STV 1.0 1.0))",
+                "(: keep_seed (KeepSeed) (STV 1.0 1.0))",
+                "(: remove_rule (Implication (Premises (RemoveSeed)) (Conclusions (RemovedGoal))) (STV 1.0 1.0))",
+                "(: keep_rule (Implication (Premises (KeepSeed)) (Conclusions (KeptGoal))) (STV 1.0 1.0))",
+            ]
+        )
+
+        self.assertTrue(handler.query("(: $prf (RemovedGoal) $tv)", timeout_sec=0))
+        self.assertEqual(handler.remove_statement("remove_seed"), 1)
+        self.assertFalse(handler.query("(: $prf (RemovedGoal) $tv)", timeout_sec=0))
+        self.assertTrue(handler.query("(: $prf (KeptGoal) $tv)", timeout_sec=0))
+        self.assertFalse(any("remove_seed" in atom for atom in handler._added_atoms))
+        self.assertFalse(handler.query("(: $prf (RemovedGoal) $tv)", timeout_sec=5))
+        self.assertTrue(handler.query("(: $prf (KeptGoal) $tv)", timeout_sec=5))
+
+    def test_remove_statement_handles_duplicates_wrappers_and_kb_scope(self):
+        left = PeTTaChainer()
+        right = PeTTaChainer()
+        left.add_atoms_no_check(
+            [
+                "(: duplicate_name (DuplicateOne) (STV 1.0 1.0))",
+                "(: duplicate_name (DuplicateTwo) (STV 1.0 1.0))",
+                "(: wrapped_seed (WrappedSeed) (STV 1.0 1.0))",
+                "(: (no_inverse wrapped_rule) (Implication (Premises (WrappedSeed)) (Conclusions (WrappedGoal))) (STV 1.0 1.0))",
+            ]
+        )
+        right.add_atom("(: duplicate_name (RightDuplicate) (STV 1.0 1.0))")
+
+        self.assertEqual(left.remove_statement("duplicate_name"), 2)
+        self.assertFalse(left.query("(: $prf (DuplicateOne) $tv)", timeout_sec=0))
+        self.assertFalse(left.query("(: $prf (DuplicateTwo) $tv)", timeout_sec=0))
+        self.assertTrue(right.query("(: $prf (RightDuplicate) $tv)", timeout_sec=0))
+        self.assertEqual(left.remove_statement("(no_inverse wrapped_rule)"), 1)
+        self.assertFalse(left.query("(: $prf (WrappedGoal) $tv)", timeout_sec=0))
+        self.assertEqual(left.remove_statement("missing_name"), 0)
+
+    def test_remove_statement_rejects_variable_names(self):
+        handler = PeTTaChainer()
+
+        with self.assertRaisesRegex(ValueError, "ground"):
+            handler.remove_statement("$name")
+
+    def test_remove_statement_randomized_rebuild_property(self):
+        rng = random.Random(20260717)
+        handler = PeTTaChainer()
+        item_count = 16
+        handler.add_atoms_no_check(
+            [
+                f"(: fuzz_fact_{index} (FuzzFact {index}) (STV 1.0 1.0))"
+                for index in range(item_count)
+            ]
+            + [
+                f"(: fuzz_rule_{index} (Implication (Premises (FuzzFact {index})) (Conclusions (FuzzGoal {index}))) (STV 1.0 1.0))"
+                for index in range(item_count)
+            ]
+        )
+        removed_facts = set(rng.sample(range(item_count), 5))
+        removed_rules = set(rng.sample(range(item_count), 5))
+
+        for index in sorted(removed_facts):
+            self.assertEqual(handler.remove_statement(f"fuzz_fact_{index}"), 1)
+        for index in sorted(removed_rules):
+            self.assertEqual(handler.remove_statement(f"fuzz_rule_{index}"), 1)
+
+        for index in range(item_count):
+            with self.subTest(index=index):
+                fact_exists = bool(
+                    handler.query(
+                        f"(: $prf (FuzzFact {index}) $tv)", timeout_sec=0
+                    )
+                )
+                goal_exists = bool(
+                    handler.query(
+                        f"(: $prf (FuzzGoal {index}) $tv)", timeout_sec=0
+                    )
+                )
+                self.assertEqual(fact_exists, index not in removed_facts)
+                self.assertEqual(
+                    goal_exists,
+                    index not in removed_facts and index not in removed_rules,
+                )
+
+        self.assertEqual(
+            len(handler._added_atoms),
+            item_count * 2 - len(removed_facts) - len(removed_rules),
+        )
 
 
 if __name__ == "__main__":
