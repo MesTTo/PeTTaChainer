@@ -263,6 +263,22 @@
 (= (fact-evidence-only $ev)
    (fold-flat fact-evidence-only-step () $ev))
 
+(= (poolable-fact-evidence-step $acc $entry)
+   (if (= $entry (fact-ev $_kb $_proof $_type))
+      (append $acc ($entry))
+      $acc))
+
+(= (poolable-fact-evidence $ev)
+   (fold-flat poolable-fact-evidence-step () $ev))
+
+(= (non-poolable-evidence $ev)
+   (subtraction-atom $ev (poolable-fact-evidence $ev)))
+
+(= (evidence-sets-dependent? $set-a $set-b)
+   (evidence-sets-overlap?
+      (non-poolable-evidence $set-a)
+      (non-poolable-evidence $set-b)))
+
 (= (premise-evidence-overlap? $seen $pev)
    (evidence-sets-overlap? (fact-evidence-only $seen) (fact-evidence-only $pev)))
 

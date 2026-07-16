@@ -253,11 +253,274 @@
 (= (merge-proof-id-output-step $acc $pid)
    (merge-proof-atoms $acc (proof-output-atom $pid)))
 
+; Lifting merge factors common fact evidence out of affine total-MP proofs.
+; The residual evidence must be nonempty and disjoint, and re-evaluation must
+; reproduce each stored TV. Unsupported proof shapes fall back to normal merge.
+(= (lifting-cpu-child? $pid)
+   (if (= (proof-output-atom $pid) (CPU $_formula $_args $_result)) true false))
+
+(= (lifting-split-children () $premises $cpus) ($premises $cpus))
+(= (lifting-split-children (cons $pid $rest) $premises $cpus)
+   (if (lifting-cpu-child? $pid)
+      (lifting-split-children $rest $premises (append $cpus ($pid)))
+      (lifting-split-children $rest (append $premises ($pid)) $cpus)))
+
+(= (lifting-cpu-formula? $pid $formula)
+   (if (= (proof-output-atom $pid) (CPU $formula $_args $_result)) true false))
+
+(= (lifting-standard-cpu-chain? $cpus)
+   (case $cpus (
+      ((cons $pid ()) (lifting-cpu-formula? $pid TotalMpConclusionFormula))
+      ((cons $pid $rest)
+         (and
+            (lifting-cpu-formula? $pid AndFormula)
+            (lifting-standard-cpu-chain? $rest)))
+      ($_ false))))
+
+(= (lifting-proof-list-shape? ()) true)
+(= (lifting-proof-list-shape? (cons $pid $rest))
+   (and (lifting-proof-shape? $pid) (lifting-proof-list-shape? $rest)))
+
+(= (lifting-rule-shape? $pid)
+   (let
+      ($premises $cpus)
+      (lifting-split-children (proof-children-by-id $pid) () ())
+      (and
+         (not (== $premises ()))
+         (and
+            (lifting-standard-cpu-chain? $cpus)
+            (lifting-proof-list-shape? $premises)))))
+
+(= (lifting-proof-shape? $pid)
+   (let $kind (proof-kind-by-id $pid)
+      (case $kind (
+         ((leaf $_raw) (not (lifting-cpu-child? $pid)))
+         ((rule $_raw) (lifting-rule-shape? $pid))
+         ($_ false)))))
+
+(= (lifting-key-in? $_key ()) false)
+(= (lifting-key-in? $key (cons $head $rest))
+   (if (=alpha $key $head) true (lifting-key-in? $key $rest)))
+
+(= (lifting-and-fold $tvs)
+   (case $tvs (
+      ((cons $tv ()) $tv)
+      ((cons $tv $rest) (AndFormula $tv (lifting-and-fold $rest)))
+      ($_ no-tv))))
+
+(= (lifting-last $items)
+   (case $items (
+      ((cons $item ()) $item)
+      ((cons $_item $rest) (lifting-last $rest))
+      ($_ no-item))))
+
+(= (lifting-reeval-list () $_keys $_override) ())
+(= (lifting-reeval-list (cons $pid $rest) $keys $override)
+   (cons
+      (lifting-reeval $pid $keys $override)
+      (lifting-reeval-list $rest $keys $override)))
+
+(= (lifting-reeval-rule $pid $keys $override)
+   (let*
+      ((($premises $cpus)
+          (lifting-split-children (proof-children-by-id $pid) () ()))
+       ($antecedent-tv
+          (lifting-and-fold (lifting-reeval-list $premises $keys $override)))
+       ((CPU TotalMpConclusionFormula
+            ($source-kb $premise $conclusion $_stored-antecedent $rule-tv $fallback)
+            $_stored-result)
+          (proof-output-atom (lifting-last $cpus))))
+      (reduce
+         (reduce
+            (TotalMpConclusionFormula
+               $source-kb $premise $conclusion $antecedent-tv $rule-tv $fallback)))))
+
+(= (lifting-output-tv $output)
+   (case $output (
+      ((CPU $_formula $_args $tv) $tv)
+      (($_type $_kb $_proof $tv) $tv)
+      ($_ no-tv))))
+
+(= (lifting-reeval $pid $keys $override)
+   (let*
+      (($output (proof-output-atom $pid))
+       ($stored-tv (lifting-output-tv $output)))
+      (if (lifting-key-in? (candidate-output-key $output) $keys)
+         $override
+         (case (proof-kind-by-id $pid) (
+            ((rule $_raw) (lifting-reeval-rule $pid $keys $override))
+            ($_ $stored-tv))))))
+
+(= (lifting-pid-facts $pid)
+   (poolable-fact-evidence (snd (proof-stats-by-id $pid))))
+
+(= (lifting-shared-facts (cons $pid $rest))
+   (fold-flat
+      (|-> ($shared $next-pid)
+         (intersection-atom $shared (lifting-pid-facts $next-pid)))
+      (lifting-pid-facts $pid)
+      $rest))
+
+(= (lifting-fact-key (fact-ev $kb $_proof $type)) ($type $kb))
+
+(= (lifting-shared-keys ()) ())
+(= (lifting-shared-keys (cons $fact $rest))
+   (cons (lifting-fact-key $fact) (lifting-shared-keys $rest)))
+
+(= (lifting-find-tv-children () $_key) no-tv)
+(= (lifting-find-tv-children (cons $pid $rest) $key)
+   (let $result (lifting-find-tv $pid $key)
+      (if (== $result no-tv)
+         (lifting-find-tv-children $rest $key)
+         $result)))
+
+(= (lifting-find-tv $pid $key)
+   (let $output (proof-output-atom $pid)
+      (if (and
+            (not (lifting-cpu-child? $pid))
+            (=alpha (candidate-output-key $output) $key))
+         (lifting-output-tv $output)
+         (lifting-find-tv-children (proof-children-by-id $pid) $key))))
+
+(= (lifting-real-conjunction $pid $keys)
+   (case $keys (
+      ((cons $key ()) (lifting-find-tv $pid $key))
+      ((cons $key $rest)
+         (AndFormula
+            (lifting-find-tv $pid $key)
+            (lifting-real-conjunction $pid $rest)))
+      ($_ no-tv))))
+
+(= (lifting-residual $pid $keys)
+   (total-mp-residual
+      (lifting-reeval $pid $keys (STV 1.0 1.0))
+      (lifting-reeval $pid $keys (STV 0.0 1.0))))
+
+(= (lifting-revise-residual
+      (total-mp-residual $positive-a $negative-a)
+      (total-mp-residual $positive-b $negative-b))
+   (total-mp-residual
+      (mergetvs $positive-a $positive-b)
+      (mergetvs $negative-a $negative-b)))
+
+(= (lifting-revise-residuals $pids $keys)
+   (case $pids (
+      ((cons $pid ()) (lifting-residual $pid $keys))
+      ((cons $pid $rest)
+         (lifting-revise-residual
+            (lifting-residual $pid $keys)
+            (lifting-revise-residuals $rest $keys)))
+      ($_ no-residual))))
+
+(= (lifting-apply-residual
+      $antecedent-tv
+      (total-mp-residual $positive $negative))
+   (TotalMpFormula $antecedent-tv $positive $negative))
+
+(= (lifting-abs-diff $left $right)
+   (let $difference (- $left $right)
+      (if (< $difference 0.0) (- 0.0 $difference) $difference)))
+
+(= (lifting-close? $left $right)
+   (< (lifting-abs-diff $left $right) 0.000001))
+
+(= (lifting-tv-close? $left $right)
+   (if (= $left (STV $left-strength $left-confidence))
+      (if (= $right (STV $right-strength $right-confidence))
+         (and
+            (lifting-close? $left-strength $right-strength)
+            (lifting-close? $left-confidence $right-confidence))
+         false)
+      false))
+
+(= (lifting-residual-evidence $pid $shared)
+   (subtraction-atom (snd (proof-stats-by-id $pid)) $shared))
+
+(= (lifting-residual-evidence-list () $_shared) ())
+(= (lifting-residual-evidence-list (cons $pid $rest) $shared)
+   (cons
+      (lifting-residual-evidence $pid $shared)
+      (lifting-residual-evidence-list $rest $shared)))
+
+(= (lifting-all-nonempty? ()) true)
+(= (lifting-all-nonempty? (cons $items $rest))
+   (and (not (== $items ())) (lifting-all-nonempty? $rest)))
+
+(= (lifting-disjoint-from-all? $_evidence ()) true)
+(= (lifting-disjoint-from-all? $evidence (cons $other $rest))
+   (and
+      (== (intersection-atom $evidence $other) ())
+      (lifting-disjoint-from-all? $evidence $rest)))
+
+(= (lifting-pairwise-disjoint? ()) true)
+(= (lifting-pairwise-disjoint? (cons $evidence $rest))
+   (and
+      (lifting-disjoint-from-all? $evidence $rest)
+      (lifting-pairwise-disjoint? $rest)))
+
+(= (lifting-roundtrip-one? $pid $keys $antecedent-tv)
+   (let*
+      (($stored-tv (lifting-output-tv (proof-output-atom $pid)))
+       ($rebuilt-tv
+          (lifting-apply-residual
+             $antecedent-tv
+             (lifting-residual $pid $keys))))
+      (lifting-tv-close? $stored-tv $rebuilt-tv)))
+
+(= (lifting-roundtrips? () $_keys $_antecedent-tv) true)
+(= (lifting-roundtrips? (cons $pid $rest) $keys $antecedent-tv)
+   (and
+      (lifting-roundtrip-one? $pid $keys $antecedent-tv)
+      (lifting-roundtrips? $rest $keys $antecedent-tv)))
+
+(= (lifting-shared-tv-consistent? () $_keys $_antecedent-tv) true)
+(= (lifting-shared-tv-consistent? (cons $pid $rest) $keys $antecedent-tv)
+   (and
+      (lifting-tv-close?
+         (lifting-real-conjunction $pid $keys)
+         $antecedent-tv)
+      (lifting-shared-tv-consistent? $rest $keys $antecedent-tv)))
+
+(= (lifting-plan $pids)
+   (let $shared (lifting-shared-facts $pids)
+      (if (== $shared ()) no-lifting
+         (let*
+            (($keys (lifting-shared-keys $shared))
+             ($antecedent-tv
+                (lifting-real-conjunction (car-atom $pids) $keys))
+             ($residual-evidence
+                (lifting-residual-evidence-list $pids $shared)))
+            (if (not (lifting-proof-list-shape? $pids)) no-lifting
+               (if (not (lifting-all-nonempty? $residual-evidence)) no-lifting
+                  (if (not (lifting-pairwise-disjoint? $residual-evidence)) no-lifting
+                     (if (not
+                           (lifting-shared-tv-consistent?
+                              $pids $keys $antecedent-tv))
+                        no-lifting
+                        (if (lifting-roundtrips? $pids $keys $antecedent-tv)
+                           (lifting-plan-data $keys $antecedent-tv)
+                           no-lifting)))))))))
+
+(= (lifting-merge-output $pids (lifting-plan-data $keys $antecedent-tv))
+   (let*
+      (($residual (lifting-revise-residuals $pids $keys))
+       ($merged-tv (lifting-apply-residual $antecedent-tv $residual))
+       (($type $kb $_proof $_stored-tv)
+          (proof-output-atom (car-atom $pids))))
+      ($type $kb
+         (cons merge/lifting (proof-ref-list $pids))
+         $merged-tv)))
+
 (= (merge-proof-id-output $pids)
    (case $pids (
       (() ())
       ((cons $pid $rest)
-         (fold-flat merge-proof-id-output-step (proof-output-atom $pid) $rest)))))
+         (if (== $rest ())
+            (proof-output-atom $pid)
+            (let $plan (lifting-plan (cons $pid $rest))
+               (if (== $plan no-lifting)
+                  (fold-flat merge-proof-id-output-step (proof-output-atom $pid) $rest)
+                  (lifting-merge-output (cons $pid $rest) $plan))))))))
 
 (= (proof-ref-ids-list ()) ())
 (= (proof-ref-ids-list (cons $head $tail))
@@ -366,7 +629,7 @@
       ()))
 
 (= (proof-overlap-dominates-score? $old-ev $old-score $new-ev $new-score)
-   (and (evidence-sets-overlap? $old-ev $new-ev)
+   (and (evidence-sets-dependent? $old-ev $new-ev)
       (or (> $old-score $new-score) (and (== $old-score $new-score) (evidence-subset? $new-ev $old-ev)))))
 
 (= (goal-proof-candidate-comparable? false $_outkey $_oldpid) true)

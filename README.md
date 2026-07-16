@@ -157,6 +157,12 @@ Query assumptions and compiler-generated helper rules do not contribute evidence
 rule with `!(mark-logic-rule ruleName)` when it is a logical schema rather than uncertain support;
 the rule remains executable but no longer contributes a rule-evidence token.
 
+When several proofs share facts but have disjoint remaining evidence, the proof store emits
+`merge/lifting`. It temporarily factors the common facts out, revision-merges the residual total-MP
+branches, then applies the common facts once. The merge is limited to proof paths made from facts,
+conjunction, and `TotalMpConclusionFormula`. A full truth-value round trip must reproduce
+every original proof. Other formula shapes retain the normal dominance or revision behavior.
+
 ## Benchmarks
 
 Run the full showcase:

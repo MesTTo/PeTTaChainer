@@ -11,11 +11,12 @@
    (: ruleStable (Implication (Premises (BasePremise)) (Conclusions (SwitchGoal))) (STV 1.0 0.7)))
 
 !(test
-   (let (: (rule-proof ruleStable baseFact) (SwitchGoal) (STV 1.0 0.7))
-      (superpose (collapse
-                  (query 10 kb (: $prf (SwitchGoal) $tv))))
-      true)
-   true)
+   (collapse (query 10 kb (: $prf (SwitchGoal) $tv)))
+   ((: (merge/lifting
+          (rule-proof ruleStable baseFact)
+          (rule-proof ruleHighThenDrop (rule-proof conjunction weakFact baseFact)))
+       (SwitchGoal)
+       (STV 1.0 0.7096774193548386))))
 
 !(test
    (let (: (rule-proof ruleHighThenDrop (conjunction weakFact baseFact)) (SwitchGoal) (STV 1.0 0.1))
@@ -30,10 +31,18 @@
    ((: (rule-proof ruleStable baseFact) (SwitchGoal) (STV 1.0 0.7))))
 
 !(test (collapse (query 7 kb (: $prf (SwitchGoal) $tv)))
-   ((: (rule-proof ruleStable baseFact) (SwitchGoal) (STV 1.0 0.7))))
+   ((: (merge/lifting
+          (rule-proof ruleStable baseFact)
+          (rule-proof ruleHighThenDrop (rule-proof conjunction weakFact baseFact)))
+       (SwitchGoal)
+       (STV 1.0 0.7096774193548386))))
 
 !(test (collapse (query 100 kb (: $prf (SwitchGoal) $tv)))
-   ((: (rule-proof ruleStable baseFact) (SwitchGoal) (STV 1.0 0.7))))
+   ((: (merge/lifting
+          (rule-proof ruleStable baseFact)
+          (rule-proof ruleHighThenDrop (rule-proof conjunction weakFact baseFact)))
+       (SwitchGoal)
+       (STV 1.0 0.7096774193548386))))
 
 !(compileadd priorityStrengthKb (: weakInput (WeakInput) (STV 0.2 1.0)))
 

@@ -13,6 +13,8 @@ Layout of this folder:
   `backward_proof_store` groups equivalent subgoal outputs and exposes one merged
   representative to rule continuations and aggregates. User-authored implications
   contribute rule provenance unless their names are registered with `mark-logic-rule`.
+  It also emits `merge/lifting` when common fact evidence can be factored out of
+  otherwise independent total-MP proof paths.
 - `context/` is the πPLN context layer: `context_from_kb`, `context_generation`,
   the pure-MeTTa and Prolog beams, the inference-control modules, and the Prolog
   beam source `context_generation_beam.pl`.

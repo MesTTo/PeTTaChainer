@@ -606,6 +606,7 @@ def proof_structure_certificate(
     n = len(PRIMARY_CHAIN)
     operator_counts = {
         "merge/revision": _audit_count(audit, "merge/revision", raw_proof),
+        "merge/lifting": _audit_count(audit, "merge/lifting", raw_proof),
         "rule-proof": _audit_count(audit, "rule-proof", raw_proof),
         "lateral_move": _audit_count(audit, "lateral_move", raw_proof),
         "pii_incident": _audit_count(audit, "pii_incident", raw_proof),

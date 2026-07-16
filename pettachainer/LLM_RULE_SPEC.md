@@ -17,6 +17,10 @@ It does not describe how to invoke chainer interface functions.
 (: $proofVar typePattern $tvVar)
 ```
 
+The returned proof may contain `merge/revision`, `merge/additive-complement`, or `merge/lifting`.
+`merge/lifting` means the branches shared fact evidence, so the chainer revised their independent
+residual support and applied the shared facts once.
+
 ## Rule Template
 
 ```metta

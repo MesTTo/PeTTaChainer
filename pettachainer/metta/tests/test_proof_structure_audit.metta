@@ -15,6 +15,7 @@
 !(test (count-token isolate_policy (DemoProofTerm (DemoIsolateResult))) 3)
 !(test (count-token pii_incident (DemoProofTerm (DemoIsolateResult))) 3)
 !(test (count-token merge/revision (DemoProofTerm (DemoIsolateResult))) 2)
+!(test (count-token merge/lifting (DemoProofTerm (DemoIsolateResult))) 0)
 
 ; Forbidden labels are absent.
 !(test (count-any (noise_1 noise_2 trust_secondary_1 trust_secondary_2 rotate_policy token_seed)
@@ -39,4 +40,5 @@
       (op-pii_incident 3)
       (op-isolate_policy 3)
       (op-rule-proof 24)
-      (op-merge/revision 2)))
+      (op-merge/revision 2)
+      (op-merge/lifting 0)))

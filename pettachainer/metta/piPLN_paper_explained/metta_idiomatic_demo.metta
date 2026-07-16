@@ -180,7 +180,8 @@
       (op-pii_incident 1)
       (op-isolate_policy 1)
       (op-rule-proof 3)
-      (op-merge/revision 0)))
+      (op-merge/revision 0)
+      (op-merge/lifting 0)))
 
 ; ============================================================================
 ; ACT 4.  Counterfactual: was the context real, or just baked in?

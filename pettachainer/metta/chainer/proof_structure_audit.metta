@@ -6,6 +6,7 @@
 ;     appear both bare and (rule-proof <label> <body>),
 ;   - (rule-proof conjunction <left> <leaf>) for two-premise conjunctions,
 ;   - (merge/revision <left> <right>) when a goal has several proofs,
+;   - (merge/lifting <branch> ...) when branches share fact evidence,
 ;   - bare leaf labels (phish_laptop, customerdb_pii, trust_primary_N).
 ; No imports: it uses only builtins (car-atom, cdr-atom, is-expr, if, case).
 
@@ -101,5 +102,6 @@
             (op-pii_incident (count-token pii_incident $prf))
             (op-isolate_policy (count-token isolate_policy $prf))
             (op-rule-proof (count-token rule-proof $prf))
-            (op-merge/revision (count-token merge/revision $prf))))
+            (op-merge/revision (count-token merge/revision $prf))
+            (op-merge/lifting (count-token merge/lifting $prf))))
       ($_other (ProofAudit (target-action-matches False))))))

@@ -131,6 +131,25 @@ should not count as uncertain support:
 The marked rule remains available to the chainer. Its proof applications omit the `(rule-ev ...)`
 token, so independently supported uses can still revision-merge.
 
+### Shared-fact proof merging
+
+Two conclusions can share fact evidence without being duplicate proofs. For example, two separate
+rules may both use the same `(A i)` fact to derive `(B i)`. PeTTaChainer factors the common fact out,
+revision-merges the remaining rule support, and applies `(A i)` once. The returned proof starts with
+`merge/lifting`:
+
+```metta
+(: (merge/lifting (rule-proof ab1 a) (rule-proof ab2 a))
+   (B i)
+   (STV 0.6 0.9473684210526316))
+```
+
+Lifting requires at least one common `fact-ev`, nonempty pairwise-disjoint residual evidence, and a
+proof path composed only of supported affine formulas. The chainer re-evaluates each path with the
+common facts set to true and false, then requires the reconstructed truth value to match the stored
+one. A path containing a piecewise formula such as `LikelierThanFormula`, an aggregate, or another
+unsupported CPU formula is not lifted.
+
 ## Built-in Premise Forms
 
 ### 1) Plain predicates
