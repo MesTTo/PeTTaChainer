@@ -13,6 +13,8 @@ Layout of this folder:
   `backward_proof_store` groups equivalent subgoal outputs and exposes one merged
   representative to rule continuations and aggregates. User-authored implications
   contribute rule provenance unless their names are registered with `mark-logic-rule`.
+  Predicates registered with `set-specializing-predicate` ground structural rule
+  templates against matching facts and emit concrete-head rules in either add order.
   It also emits `merge/lifting` when common fact evidence can be factored out of
   otherwise independent total-MP proof paths.
 - `context/` is the πPLN context layer: `context_from_kb`, `context_generation`,

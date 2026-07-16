@@ -46,6 +46,17 @@
    (if (logic-rule? $name) ()
       (add-atom &logic_config (logic-rule $name))))
 
+(= (specializing-predicate? $head)
+   (let $matches
+      (collapse
+         (match &logic_config (specializing-predicate $head) true))
+      (not (== $matches ()))))
+
+(= (set-specializing-predicate $head)
+   (if (or (is-var $head) (is-expr $head)) ()
+      (if (specializing-predicate? $head) ()
+         (add-atom &logic_config (specializing-predicate $head)))))
+
 !(clear-logic-config)
 !(set-logic-name PLN)
 !(set-compound-connective And All ProjectAll)

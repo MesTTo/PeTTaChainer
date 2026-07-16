@@ -2,8 +2,11 @@
 !(import! &self (library lib_spaces))
 !(import! &self (library lib_he))
 !(import! &self chainer/logic_config)
+!(import_prolog_function select)
 
 !(bind! &rule_evidence_names (new-space))
+!(bind! &spec_template (new-space))
+!(bind! &spec_done (new-space))
 
 (= (nextctx)
    (let*
@@ -644,18 +647,123 @@
          ((: ($kb $ctx $vars) ((inverted $prf with $prfa_est $prfb_est) $prfb_wit) $a $atv)))))
 
 
+(= (specialization-trigger? $premise)
+   (if (is-expr $premise)
+      (let $head (car-atom $premise)
+         (if (is-var $head) false
+            (and
+               (specializing-predicate? $head)
+               (not (== (extract-vars $premise) ())))))
+      false))
+
+(= (rule-trigger-premises ()) ())
+(= (rule-trigger-premises (cons $premise $rest))
+   (if (specialization-trigger? $premise)
+      (cons $premise (rule-trigger-premises $rest))
+      (rule-trigger-premises $rest)))
+
+(= (implication-premises
+      (Implication
+         (cons Premises $premises)
+         (cons Conclusions $_conclusions)))
+   $premises)
+
+(= (specialization-fact-head $type)
+   (if (is-expr $type) (car-atom $type) $type))
+
+(= (spec-template-registered? $kb $head $stmt)
+   (not
+      (==
+         (collapse
+            (match &spec_template ($kb $head $stored)
+               (if (=alpha $stored $stmt) true (empty))))
+         ())))
+
+(= (register-spec-template! $kb $head $stmt)
+   (if (spec-template-registered? $kb $head $stmt) ()
+      (let $copy (copy_term $stmt)
+         (add-atom &spec_template ($kb $head $copy)))))
+
+(= (register-spec-templates! $_kb () $_stmt) ())
+(= (register-spec-templates! $kb (cons $trigger $rest) $stmt)
+   (let $_registered
+      (register-spec-template! $kb (specialization-fact-head $trigger) $stmt)
+      (register-spec-templates! $kb $rest $stmt)))
+
+; The full grounded statement distinguishes rules with the same logical shape.
+(= (spec-done? $kb $stmt)
+   (not
+      (==
+         (collapse
+            (match &spec_done ($kb $stored)
+               (if (=alpha $stored $stmt) true (empty))))
+         ())))
+
+(= (mark-spec-done! $kb $stmt)
+   (let $copy (copy_term $stmt)
+      (add-atom &spec_done ($kb $copy))))
+
+; Matching stored trigger facts binds the variables shared with the rule body.
+(= (ground-specialization-triggers $_kb () $body) $body)
+(= (ground-specialization-triggers $kb (cons $trigger $rest) $body)
+   (match &kb ($trigger ($kb $_ctx $_vars) $_proof $_tv)
+      (ground-specialization-triggers $kb $rest $body)))
+
+(= (emit-specialized-rule $kb (: $proof $type $tv))
+   (let $stmt (: $proof $type $tv)
+      (if (spec-done? $kb $stmt) (empty)
+         (let $_marked (mark-spec-done! $kb $stmt)
+            (compile_ $kb $stmt)))))
+
+(= (specialize-rule-from-stored-facts $kb $triggers $stmt)
+   (emit-specialized-rule $kb
+      (ground-specialization-triggers $kb $triggers $stmt)))
+
+; SWI-Prolog select/3 backtracks over every occurrence without leaking bindings
+; between alternatives.
+(= (pin-specialization-trigger $fact-type $triggers)
+   (let $remaining (select $trigger $triggers)
+      (let $trigger $fact-type $remaining)))
+
+(= (specialize-template-from-new-fact $kb $fact-type (: $proof $type $tv))
+   (let $remaining
+      (pin-specialization-trigger $fact-type
+         (rule-trigger-premises (implication-premises $type)))
+      (emit-specialized-rule $kb
+         (ground-specialization-triggers $kb $remaining
+            (: $proof $type $tv)))))
+
+(= (compile-specializations-for-fact $kb $type)
+   (let $head (specialization-fact-head $type)
+      (if (and (not (is-var $head)) (specializing-predicate? $head))
+         (match &spec_template ($kb $head $template)
+            (specialize-template-from-new-fact $kb $type
+               (copy_term $template)))
+         (empty))))
+
+(= (compile-ordinary-implication $kb $prf $tv $premises $conclusions)
+   (let*
+      (($plan (build-implication-plan $kb $prf $premises $conclusions))
+        ((compiled-implication $shape-kb $a $pair-a $b $nb $na $skip-inverse $execs $proofs $atv) $plan))
+      (superpose (
+         (compile-implication-forward-rules $kb $shape-kb (kbctx $kb) $prf $tv $a $pair-a $b $execs $proofs $atv)
+         (if (not $skip-inverse) (inverse-implication $kb $prf $na $b $tv) (empty))
+         (if (or $skip-inverse (is-var $na)) (empty)
+            (compile-outputs (: ((inverted $prf $pa $pb1) $pb2) $na $natv)))
+         (if (or $skip-inverse (is-var $b)) (empty)
+            (compile-adapter-chain plain (: $pb2 $b $btv2)))))))
+
+
 (= (compile_ $kb (@ $stmt (: $prf $Type $tv)))
    (if (is-var $Type) (empty)
       (if (= $Type (Implication (cons Premises $premises) (cons Conclusions $conclusions)))
-         (let*
-            (($plan (build-implication-plan $kb $prf $premises $conclusions))
-              ((compiled-implication $shape-kb $a $pair-a $b $nb $na $skip-inverse $execs $proofs $atv) $plan))
-            (superpose (
-                 (compile-implication-forward-rules $kb $shape-kb (kbctx $kb) $prf $tv $a $pair-a $b $execs $proofs $atv)
-                 (if (not $skip-inverse) (inverse-implication $kb $prf $na $b $tv) (empty))
-	                 (if (or $skip-inverse (is-var $na)) (empty)
-	                    (compile-outputs (: ((inverted $prf $pa $pb1) $pb2) $na $natv)))
-	                 (if (or $skip-inverse (is-var $b)) (empty) (compile-adapter-chain plain (: $pb2 $b $btv2))))))
+         (let $triggers (rule-trigger-premises $premises)
+            (if (== $triggers ())
+               (compile-ordinary-implication $kb $prf $tv $premises $conclusions)
+               (let $_registered
+                  (register-spec-templates! $kb $triggers (: $prf $Type $tv))
+                  (specialize-rule-from-stored-facts $kb $triggers
+                     (: $prf $Type $tv)))))
          (if (bidirectional-implication-type? $Type)
             (let ($_head (cons Premises $left) (cons Conclusions $right)) $Type
                (superpose (
@@ -667,6 +775,7 @@
                      $tv)))))
             (let $fact-kb (compile-fact-kb $kb)
                (superpose ((() |- ((: $fact-kb $prf $Type $tv)))
+                           (compile-specializations-for-fact $kb $Type)
                            (compile-outputs (: $fact-kb $prf $Type $tv)))))))))
 
 

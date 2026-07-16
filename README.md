@@ -157,6 +157,26 @@ Query assumptions and compiler-generated helper rules do not contribute evidence
 rule with `!(mark-logic-rule ruleName)` when it is a logical schema rather than uncertain support;
 the rule remains executable but no longer contributes a rule-evidence token.
 
+Structural rules can ground relation variables when they are added. Register the predicate that
+declares the relation, then add the rule and facts in either order:
+
+```metta
+!(set-specializing-predicate Symmetric)
+!(compileadd kb
+   (: symmetricRule
+      (Implication
+         (Premises (Symmetric $relation) ($relation $left $right))
+         (Conclusions ($relation $right $left)))
+      (STV 1.0 1.0)))
+!(compileadd kb (: symmetricFriend (Symmetric Friend) (STV 1.0 1.0)))
+```
+
+The compiler emits a `Friend`-headed rule instead of a rule in the wildcard head bucket. It keeps
+`(Symmetric Friend)` as a premise, so its truth value and fact provenance remain in every proof.
+Exact statement re-adds are suppressed, while rules with different names or truth values remain
+distinct. Register specializing predicates after importing the selected logic configuration and
+before adding structural rules.
+
 When several proofs share facts but have disjoint remaining evidence, the proof store emits
 `merge/lifting`. It temporarily factors the common facts out, revision-merges the residual total-MP
 branches, then applies the common facts once. The merge is limited to proof paths made from facts,

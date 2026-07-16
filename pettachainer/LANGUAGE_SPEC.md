@@ -131,6 +131,42 @@ should not count as uncertain support:
 The marked rule remains available to the chainer. Its proof applications omit the `(rule-ev ...)`
 token, so independently supported uses can still revision-merge.
 
+### Structural rule specialization
+
+Use `set-specializing-predicate` when facts under one predicate declare which relation symbols a
+structural rule may use. Call it after importing the selected logic configuration and before adding
+the rule:
+
+```metta
+!(set-specializing-predicate Symmetric)
+
+!(compileadd kb
+   (: symmetricRule
+      (Implication
+         (Premises
+            (Symmetric $relation)
+            ($relation $left $right))
+         (Conclusions
+            ($relation $right $left)))
+      (STV 0.9 0.9)))
+
+!(compileadd kb
+   (: symmetricFriend (Symmetric Friend) (STV 1.0 1.0)))
+```
+
+The premise `(Symmetric $relation)` is a specialization trigger because its head is registered and
+it contains a variable. The compiler stores the rule as a template until a matching fact is known.
+When `(Symmetric Friend)` arrives, it emits a concrete `Friend`-headed rule. Facts may be added
+before or after the rule.
+
+The grounded trigger remains an ordinary premise. Its truth value and proof ID therefore remain in
+the derived proof. Exact copies of a statement emit one concrete rule, but two statements with
+different proof IDs or truth values remain distinct. A rule may contain several specialization
+triggers, including repeated triggers with the same predicate.
+
+Ground trigger premises are not specialized again. A rule whose trigger predicate was not
+registered follows the normal variable-head path.
+
 ### Shared-fact proof merging
 
 Two conclusions can share fact evidence without being duplicate proofs. For example, two separate

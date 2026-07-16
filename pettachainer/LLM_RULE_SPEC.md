@@ -1,7 +1,7 @@
 # PeTTaChainer LLM Rule Spec
 
-This spec focuses only on constructing valid Statements and Queries.
-It does not describe how to invoke chainer interface functions.
+This spec focuses on constructing valid statements, queries, and the optional
+compiler declarations they rely on. It does not describe the query and chaining interfaces.
 
 ## Core Forms
 
@@ -33,6 +33,28 @@ residual support and applied the shared facts once.
             conclusion1))
     (STV 1.0 1.0))
 ```
+
+## Optional Structural Specialization
+
+If a predicate declares relation symbols, register it before adding structural rules:
+
+```metta
+!(set-specializing-predicate Symmetric)
+
+(: symmetricRule
+    (Implication
+        (Premises
+            (Symmetric $relation)
+            ($relation $left $right))
+        (Conclusions
+            ($relation $right $left)))
+    (STV 1.0 1.0))
+```
+
+A matching fact such as `(: symmetricFriend (Symmetric Friend) (STV 1.0 1.0))` grounds
+`$relation`. The emitted rule keeps `(Symmetric Friend)` as a premise. Add the fact before or after
+the rule. Do not register the predicate if the rule should remain generic and use variable-head
+lookup.
 
 ## Premise Helpers You Can Use
 
