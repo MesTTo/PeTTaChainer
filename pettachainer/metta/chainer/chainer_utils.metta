@@ -93,7 +93,8 @@
 
 (= (premises-expected-confidence ()) 1.0)
 (= (premises-expected-confidence (cons $prem $rest))
-   (premises-expected-confidence-step $prem $rest))
+   (let $hits (collapse (premises-expected-confidence-step $prem $rest))
+      (if (== $hits ()) (empty) (car-atom $hits))))
 
 (= (score-tv $score) (STV 1.0 (max 0.0 (min 1.0 $score))))
 
@@ -141,10 +142,12 @@
    (let*
       (($count1 (confidence-to-count $conf1))
         ($count2 (confidence-to-count $conf2))
-        ($m (/ (+ (* $m1 $count1) (* $m2 $count2)) (+ $count1 $count2)))
-        ($c (+ $count1 $count2))
-        ($conf (/ $c (+ $c 800))))
-      (STV $m $conf)))
+        ($c (+ $count1 $count2)))
+      (if (<= $c 0.0)
+         (STV (/ (+ $m1 $m2) 2) 0.0)
+         (STV
+            (/ (+ (* $m1 $count1) (* $m2 $count2)) $c)
+            (/ $c (+ $c 800))))))
 
 (= (RevisionMergeProof ($type1 $kb $prf1 $tv1) ($_type2 $_kb2 $prf2 $tv2))
    ($type1 $kb
@@ -169,7 +172,11 @@
       (add-atom $space $expr)
       (empty)))
 
-(= (contains-hash? $x) (fold-nested (|-> ($acc $elem) (or (== $elem #) $acc)) false $x))
+(= (contains-hash? $x)
+   (if (is-var $x) false
+      (if (is-expr $x)
+         (fold-nested (|-> ($acc $elem) (or (== $elem #) $acc)) false $x)
+         (== $x #))))
 
 (= (next-search-id $key)
    (let*

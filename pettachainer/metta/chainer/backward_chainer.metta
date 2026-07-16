@@ -265,8 +265,6 @@
                (commit-aggregate-snapshot-heap $agenda $agg-gid $result $ev $children)
                $agenda)))))
 
-(= (direct-goal-results-view $steps (CPU $fun $args $_res))
-   (CPU $fun $args (reduce (cpu-call $steps $fun $args))))
 (= (wildcard-premise-context? $kb)
    (if (is-expr $kb) (not (== (car-atom (cdr-atom $kb)) MAIN)) false))
 (= (wildcard-premise-context-active? $kb)
@@ -288,12 +286,52 @@
                    (wildcard-premise-result $type $kb $prf $tv $stored-type)))
              (empty))))
       (empty)))
-(= (direct-goal-results-view $steps ($type $kb $prf $tv))
-   (let $qtype (if (contains-hash? $type) (map-nested (|-> ($x) (if (== $x #) $any $x)) $type) $type)
-      (superpose
-         ((match &kb ($qtype $kb $prf $tv)
-             ($qtype $kb $prf $tv))
-          (direct-wildcard-premise-results $type $kb $prf $tv)))))
+
+(= (direct-atomic-goal-result $type $kb $prf $tv)
+   (let (direct-row $row)
+      (match &kb $stored-row (direct-row $stored-row))
+      (let*
+         (($stored-type (car-atom $row))
+          ($tail (cdr-atom $row))
+          ($stored-kb (car-atom $tail))
+          ($tail2 (cdr-atom $tail))
+          ($stored-prf (car-atom $tail2))
+          ($tail3 (cdr-atom $tail2))
+          ($stored-tv (car-atom $tail3)))
+         (if (= $type $stored-type)
+            (if (= $kb $stored-kb)
+               (if (= $prf $stored-prf)
+                  (if (= $tv $stored-tv) $row (empty))
+                  (empty))
+               (empty))
+            (empty)))))
+
+(= (direct-goal-results-view $steps $goal)
+   (let*
+      (($head (car-atom $goal))
+       ($tail (cdr-atom $goal))
+       ($arg1 (car-atom $tail))
+       ($tail2 (cdr-atom $tail))
+       ($arg2 (car-atom $tail2))
+       ($tail3 (cdr-atom $tail2))
+       ($arg3 (car-atom $tail3)))
+      (if (== $head CPU)
+         (CPU $arg1 $arg2 (reduce (cpu-call $steps $arg1 $arg2)))
+         (let*
+            (($type $head)
+             ($kb $arg1)
+             ($prf $arg2)
+             ($tv $arg3)
+             ($qtype (if (contains-hash? $type) (map-nested (|-> ($x) (if (== $x #) $any $x)) $type) $type))
+             ($query-row (cons $qtype (cons $kb (cons $prf (cons $tv ()))))))
+            (superpose
+               ((if (is-expr $qtype)
+                    (let (direct-result $matched-type $matched-kb $matched-prf $matched-tv)
+                       (match &kb $query-row (direct-result $qtype $kb $prf $tv))
+                       (cons $matched-type
+                          (cons $matched-kb (cons $matched-prf (cons $matched-tv ())))))
+                    (direct-atomic-goal-result $qtype $kb $prf $tv))
+                (direct-wildcard-premise-results $type $kb $prf $tv)))))))
 
 (= (expand-direct-goal-step $gid $_goal $agenda $result)
    (let*
@@ -314,13 +352,20 @@
       (or (not (== (extract-vars $type) ())) (contains-hash? $type))
       false))
 
+(= (rule-goal-head-view-for-key ($goal $parent-gid) $key)
+   (match ccls_head_index ($key $rule-id)
+      (match rules ($rule-id $goal $args)
+         ($args $goal $parent-gid))))
+
 (= (rule-goal-head-view ($goal $parent-gid))
    (let $key (forward-indexable-premise-key $goal)
       (if (== $key ())
          ()
-         (match ccls_head_index ($key $rule-id)
-            (match rules ($rule-id $goal $args)
-               ($args $goal $parent-gid))))))
+         (let $wildcard-key (forward-premise-wildcard-key $goal)
+            (superpose (
+               (rule-goal-head-view-for-key ($goal $parent-gid) $key)
+               (if (== $key $wildcard-key) (empty)
+                  (rule-goal-head-view-for-key ($goal $parent-gid) $wildcard-key))))))))
 
 (= (rule-goal-contextual? $goal)
    (if (= $goal ($_type ($_kbid $ctx $_vars) $_prf $_tv))

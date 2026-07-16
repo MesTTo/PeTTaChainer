@@ -36,10 +36,15 @@
                (kb-add-atom $backend wildcard_premise_index ($key $kb $type $prf $tv)))))
       ()))
 
+(= (next-rule-id $backend)
+   (if (== $backend live)
+      (next-search-id ruleid)
+      (+ 1000000000 (next-search-id bwd_tmp_ruleid))))
+
 (= (kb-add-expr $backend $expr)
    (if (= $expr (rules ($args |- $ccls)))
       (let*
-         (($id (if (== $backend live) (next-search-id ruleid) (next-search-id bwd_tmp_ruleid)))
+         (($id (next-rule-id $backend))
            ($_1 (fold-flat (kb-add-prem $backend $id) 0 $args))
            ($_2 (kb-add-atom $backend ccls_index ($ccls $id)))
            ($_3 (kb-add-ccl-head-index $backend $id $ccls))
