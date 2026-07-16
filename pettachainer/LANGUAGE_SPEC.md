@@ -137,6 +137,10 @@ Aggregate over matching facts:
 (FoldAllValue pattern init fold-fn -> out)
 ```
 
+`FoldAll` sees one merged answer per matching statement. If independent proof paths derive the same
+statement, their revised truth value enters the fold once and the fold proof points to that merged
+representative.
+
 Typical distribution fold:
 
 ```metta

@@ -261,3 +261,66 @@
               (add-atom &aggregate ($agg-gid $child-gid dummy-agg-args 1.0 0.0 $pid-new)))))
       ((proof-live? $pid-old) (proof-live? $pid-new) (length (goal-live-proof-ids $agg-gid))))
    (false true 1))
+
+!(test
+   (let*
+      (($_clear (clear-backward-state))
+       ($_gidreset (change-state! bwd_gid 0))
+       ($_pidreset (change-state! bwd_pid 0))
+       ($gid (ensure-goal-at-depth ((Goal) (kb MAIN ()) $prf $tv) 0))
+       ($shared-ev (fact-ev (kb MAIN ()) shared (Source)))
+       ($pid-high
+          (store-proof-candidate $gid
+             (proof-candidate
+                (leaf ((Goal) (kb MAIN ()) high (STV 0.9 0.8)))
+                0.8
+                ($shared-ev)
+                ())))
+       ($_pid-low
+          (store-proof-candidate $gid
+             (proof-candidate
+                (leaf ((Goal) (kb MAIN ()) low (STV 0.4 0.5)))
+                0.5
+                ($shared-ev)
+                ())))
+       ($representatives (goal-merged-proof-ids $gid))
+       ($representative (car-atom $representatives))
+       (($_score $evidence) (proof-stats-by-id $representative)))
+      ((== $representatives ($pid-high)) (== $evidence ($shared-ev))))
+   (true true))
+
+!(test
+   (let*
+      (($_clear (clear-backward-state))
+       ($_gidreset (change-state! bwd_gid 0))
+       ($_pidreset (change-state! bwd_pid 0))
+       ($gid (ensure-goal-at-depth ((Goal) (kb MAIN ()) $prf $tv) 0))
+       ($ev-a (fact-ev (kb MAIN ()) a (SourceA)))
+       ($ev-b (fact-ev (kb MAIN ()) b (SourceB)))
+       ($pid-a
+          (store-proof-candidate $gid
+             (proof-candidate
+                (leaf ((Goal) (kb MAIN ()) a (STV 0.8 0.5)))
+                0.5
+                ($ev-a)
+                ())))
+       ($pid-b
+          (store-proof-candidate $gid
+             (proof-candidate
+                (leaf ((Goal) (kb MAIN ()) b (STV 0.4 0.6)))
+                0.6
+                ($ev-b)
+                ())))
+       ($representatives (goal-merged-proof-ids $gid))
+       ($representative (car-atom $representatives))
+       ($children (proof-children-by-id $representative))
+       (($_score $evidence) (proof-stats-by-id $representative)))
+      ((length $representatives)
+       (not (or (== $representative $pid-a) (== $representative $pid-b)))
+       (length $children)
+       (is-member $pid-a $children)
+       (is-member $pid-b $children)
+       (length $evidence)
+       (is-member $ev-a $evidence)
+       (is-member $ev-b $evidence)))
+   (1 true 2 true true 2 true true))

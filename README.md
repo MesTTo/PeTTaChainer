@@ -146,6 +146,11 @@ premise-weighted strengths/confidences instead of treating the branches as indep
 samples. This models `Dog -> Animal` and `Not Dog -> Animal` as split parts of one total conditional
 rather than averaging away support from complementary cases.
 
+Equivalent subgoal answers are merged before another rule or `FoldAll` consumes them. The proof
+store creates one representative whose children and evidence are exactly the branches retained by
+the merge. A downstream rule therefore runs once against the revised subgoal instead of once per
+proof path, which prevents shared rules from inflating confidence.
+
 ## Benchmarks
 
 Run the full showcase:
