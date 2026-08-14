@@ -1,4 +1,4 @@
-!(import! &self context/context_from_kb)
+!(import! &self ../context/context_from_kb)
 
 ; --- Task 1: STVToEC (inverse of ContextECToSTV) ---
 ; total = min(cap, prior * c/(1-c)); pos = s*total, neg = (1-s)*total. Float math, so band-check.

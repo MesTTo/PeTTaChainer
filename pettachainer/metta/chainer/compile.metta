@@ -1,7 +1,7 @@
 !(import! &self (library lib_roman))
 !(import! &self (library lib_spaces))
 !(import! &self (library lib_he))
-!(import! &self chainer/logic_config)
+!(import! &self logic_config)
 !(import_prolog_function select)
 
 !(bind! &rule_evidence_names (new-space))

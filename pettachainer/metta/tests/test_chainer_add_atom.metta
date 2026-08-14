@@ -1,4 +1,4 @@
-!(import! &self chainer/chainer_utils)
+!(import! &self ../chainer/chainer_utils)
 
 !(test
    (collapse

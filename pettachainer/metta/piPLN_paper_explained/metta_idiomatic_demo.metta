@@ -21,9 +21,9 @@
 ;
 ;   petta piPLN_paper_explained/metta_idiomatic_demo.metta
 
-!(import! &self context/context_from_kb)
-!(import! &self context/context_generation_beam_metta)
-!(import! &self chainer/proof_structure_audit)
+!(import! &self ../context/context_from_kb)
+!(import! &self ../context/context_generation_beam_metta)
+!(import! &self ../chainer/proof_structure_audit)
 
 ; ============================================================================
 ; ACT 1.  The textbook exception: birds fly, except the ones that do not.

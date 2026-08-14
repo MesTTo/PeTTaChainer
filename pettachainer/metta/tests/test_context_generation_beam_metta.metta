@@ -5,8 +5,8 @@
 ; evidence. The fixtures are the exact packets from test_context_generation_beam.metta:
 ; the depth-4 needle (BeamQuad...) and the simple depth-3 case (BeamTriple...).
 
-!(import! &self context/context_generation_beam)
-!(import! &self context/context_generation_beam_metta)
+!(import! &self ../context/context_generation_beam)
+!(import! &self ../context/context_generation_beam_metta)
 
 ; ----- fixtures (verbatim from test_context_generation_beam.metta) -----
 

@@ -1,4 +1,4 @@
-!(import! &self context/context_inference_control)
+!(import! &self ../context/context_inference_control)
 
 (= (ControlQueryFeatures)
    ((type MicroDrone) (weather crosswind) (payload fragile)))

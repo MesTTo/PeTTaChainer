@@ -1,4 +1,4 @@
-!(import! &self context/context_generation_beam)
+!(import! &self ../context/context_generation_beam)
 
 (= (BeamTripleFlyPackets)
    ((EvidencePacket

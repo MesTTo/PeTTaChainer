@@ -28,7 +28,7 @@
       true)
    true)
 
-!(import! &self logic_configs/predicate_logic)
+!(import! &self ../logic_configs/predicate_logic)
 
 !(compileadd predicateLogicKb (: a (A) (STV 1.0 1.0)))
 
@@ -36,7 +36,7 @@
    (not (== (collapse (query 20 predicateLogicKb (: $prf (Or (A) (B)) $tv))) ()))
    true)
 
-!(import! &self logic_configs/pln)
+!(import! &self ../logic_configs/pln)
 
 !(compileadd plnAfterSwitchKb (: a (A) (STV 1.0 1.0)))
 
@@ -64,4 +64,4 @@
    (== (collapse (query 20 noOrKb (: $prf (Or (A) (B)) $tv))) ())
    true)
 
-!(import! &self logic_configs/pln)
+!(import! &self ../logic_configs/pln)

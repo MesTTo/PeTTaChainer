@@ -10,7 +10,7 @@
 ; each branch gets a local evidence context and an STV projection, then the
 ; controller executes the branch with the strongest projected viability.
 
-!(import! &self context/context_inference_control)
+!(import! &self ../context/context_inference_control)
 
 (= (ControlDemoQueryFeatures)
    ((type MicroDrone) (weather crosswind) (payload fragile)))

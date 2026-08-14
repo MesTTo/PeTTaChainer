@@ -10,7 +10,7 @@
 ; generated from packet features at query time, then scored by conflict
 ; reduction and projected to an STV.
 
-!(import! &self context/context_generation_beam)
+!(import! &self ../context/context_generation_beam)
 
 (= (TripleOnlyFlyPackets)
    ((EvidencePacket

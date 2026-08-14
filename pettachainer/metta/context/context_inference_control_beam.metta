@@ -10,8 +10,8 @@
 ; context_generation_beam. It is useful when the branch viability context is
 ; deeper than the pure PeTTa depth-3 guard enumerator.
 
-!(import! &self context/context_inference_control)
-!(import! &self context/context_generation_beam)
+!(import! &self context_inference_control)
+!(import! &self context_generation_beam)
 !(import! &self (library lib_import))
 !(import_prolog_functions_from_file "./context/context_generation_beam.pl" (context_beam_control_for_branches))
 

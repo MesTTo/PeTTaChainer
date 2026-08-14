@@ -10,7 +10,7 @@
 ; crosswind/fragile incident evidence is added, the generated local context
 ; changes and the controller flips to the grounding branch.
 
-!(import! &self context/context_inference_control)
+!(import! &self ../context/context_inference_control)
 
 !(add-atom &self
    (ContextControlCandidate

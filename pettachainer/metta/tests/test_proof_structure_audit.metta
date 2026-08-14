@@ -1,4 +1,4 @@
-!(import! &self chainer/proof_structure_audit)
+!(import! &self ../chainer/proof_structure_audit)
 
 ; The real isolate-proof result captured from impressive_incident_response.py
 ; (a 3-way merge/revision with mixed bare / rule-proof head forms). The expected

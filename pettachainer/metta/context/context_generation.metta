@@ -13,7 +13,7 @@
 ; combines by componentwise count addition, the section 8.1 evidence-count
 ; quantale tensor.
 
-!(import! &self chainer/compile)
+!(import! &self ../chainer/compile)
 
 (= (ContextBetween $x $lo $hi) (and (> $x $lo) (< $x $hi)))
 

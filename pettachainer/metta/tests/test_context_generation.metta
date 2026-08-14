@@ -1,4 +1,4 @@
-!(import! &self context/context_generation)
+!(import! &self ../context/context_generation)
 
 (= (DemoFlyPackets)
    ((EvidencePacket

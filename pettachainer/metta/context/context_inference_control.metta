@@ -13,7 +13,7 @@
 ; context scorer as that branch estimator: each candidate branch gets its own
 ; generated context, evidence projection, score trace, and ablation certificate.
 
-!(import! &self context/context_generation)
+!(import! &self context_generation)
 
 (= (ContextProjectionStrength (STV $strength $_confidence)) $strength)
 (= (ContextProjectionConfidence (STV $_strength $confidence)) $confidence)

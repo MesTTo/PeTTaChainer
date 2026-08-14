@@ -8,7 +8,7 @@
 ; inverts ContextECToSTV: it unwinds a stored truth value back to (EC pos neg)
 ; counts, the section 7.4 / 8.2 prior unwind.
 
-!(import! &self context/context_generation)
+!(import! &self context_generation)
 
 (= (STVToEC (STV $s $c) $prior $cap)
    (if (>= $c 1.0)

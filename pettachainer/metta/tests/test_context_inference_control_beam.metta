@@ -1,4 +1,4 @@
-!(import! &self context/context_inference_control_beam)
+!(import! &self ../context/context_inference_control_beam)
 
 (= (BeamControlLiteralReport)
    (ContextBeamBranchReport

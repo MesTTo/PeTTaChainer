@@ -9,7 +9,7 @@
 ; as a normal PeTTa function returning MeTTa atoms. Interop pattern:
 ; import_prolog_functions_from_file.
 
-!(import! &self context/context_generation)
+!(import! &self context_generation)
 !(import! &self (library lib_import))
 !(import_prolog_functions_from_file "./context/context_generation_beam.pl" (context_beam_for_query))
 

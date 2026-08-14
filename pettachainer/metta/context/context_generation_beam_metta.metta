@@ -21,7 +21,7 @@
 ; which is exactly the nesting guard_from_features/2 builds in Prolog. To match
 ; the Prolog first-seen feature order we reverse the front-cons feature union.
 
-!(import! &self context/context_generation)
+!(import! &self context_generation)
 !(import! &self (library lib_combinatorics))
 
 ; ----- small cons-list utilities (named to avoid clashing with builtins) -----
