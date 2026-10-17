@@ -6,9 +6,9 @@
    (not (== (extract-vars (CPU $fun $args $res)) ())))
 
 (= (goal-key ($type ($kbid $ctx $vars) $_prf $_tv))
-   (let $sealed-goal (sealed (extract-vars ($type $vars)) ($type $vars))
+   (let $sealed-goal (copy_term ($type $vars))
       ($sealed-goal ($kbid $ctx))))
-(= (goal-key (CPU $fun $args $res)) (sealed (extract-vars (CPU $fun $args $res)) (CPU $fun $args $res)))
+(= (goal-key (CPU $fun $args $res)) (copy_term (CPU $fun $args $res)))
 
 (= (normalize-expected-tv $tv)
    (if (is-var $tv) (STV 1.0 1.0)

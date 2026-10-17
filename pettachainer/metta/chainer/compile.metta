@@ -28,7 +28,9 @@
            ($bvars (list_to_set (extract-vars $exprb)))
            ($onlyb (\== $bvars $avars))
            ($substitute (|-> (($idx $atom) $elem) (let $elem (exists $rule $idx $avars) ((+ 1 $idx) $atom))))
-           (($_ $res) (sealed $onlyb (fold-flat $substitute (0 $exprb) $onlyb))))
+           (($avars2 $onlyb2 $exprb2) (copy_term ($avars $onlyb $exprb)))
+           ($_shared (let $avars2 $avars ()))
+           (($_ $res) (fold-flat $substitute (0 $exprb2) $onlyb2)))
          $res)))
 
 (= (addidx (cons $head $tail) $idx) (cons ($head $idx) (addidx $tail (+ $idx 1))))
