@@ -1,3 +1,4 @@
+!(import! &self (library lib_import))
 !(import! &self chainer/compile)
 
 !(use-module! heaps)
