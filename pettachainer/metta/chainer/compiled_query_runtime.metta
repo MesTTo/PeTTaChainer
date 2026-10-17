@@ -1,15 +1,5 @@
-(= (assert-space-atom-ref $space $expr)
-   (let*
-      (($term (Predicate (cons $space $expr)))
-        ($_ (callPredicate (Predicate (assertz $term $ref)))))
-      $ref))
-
-(= (erase-clause-ref $ref) (callPredicate (Predicate (erase $ref))))
-
-(= (track-temp-query-ref $ref) (add-atom &temp_query_ref (clause_ref $ref)))
-
 (= (kb-add-atom live $space $expr) (add-atom $space $expr))
-(= (kb-add-atom temp $space $expr) (track-temp-query-ref (assert-space-atom-ref $space $expr)))
+(= (kb-add-atom temp $space $expr) (progn (add-atom $space $expr) (add-atom &temp_query_ref (temp_row $space $expr))))
 
 (= (kb-add-prem $backend $id $idx $prem)
    (let $key (forward-indexable-premise-key $prem)
@@ -78,8 +68,8 @@
 (= (clear-temp-query-adds)
    (progn
       (collapse
-         (match &temp_query_ref (clause_ref $ref)
-            (progn (erase-clause-ref $ref) (remove-atom &temp_query_ref (clause_ref $ref)))))
+         (match &temp_query_ref (temp_row $space $expr)
+            (progn (remove-atom $space $expr) (remove-atom &temp_query_ref (temp_row $space $expr)))))
       true))
 
 (= (inject-compiled-adds $adds)
