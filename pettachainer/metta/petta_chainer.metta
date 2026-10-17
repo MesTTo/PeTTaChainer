@@ -1,4 +1,5 @@
 !(import! &self (library lib_import))
+!(import! &self chainer/chainer_cells)
 !(import! &self chainer/compile)
 
 !(use-module! heaps)

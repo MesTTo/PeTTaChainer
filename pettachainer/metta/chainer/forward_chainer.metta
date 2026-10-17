@@ -21,41 +21,41 @@
    (if (= $prem ($_type ($kbid $_ctx $_vars) $_prf $_tv)) (fwd_trigger $kbid any) fwd_trigger_any))
 
 (= (forward-load-agenda $kb)
-   (let $magenda (catch (get-state (atom_concat fwd_agenda_ $kb)))
+   (let $magenda (catch (chainer-cell-get (atom_concat fwd_agenda_ $kb)))
       (if-error $magenda (empty_heap) $magenda)))
 
-(= (forward-save-agenda $kb $agenda) (change-state! (atom_concat fwd_agenda_ $kb) $agenda))
-(= (forward-set-agenda-dirty $kb $dirty) (change-state! (forward-agenda-dirty-key $kb) $dirty))
+(= (forward-save-agenda $kb $agenda) (chainer-cell-write! (atom_concat fwd_agenda_ $kb) $agenda))
+(= (forward-set-agenda-dirty $kb $dirty) (chainer-cell-write! (forward-agenda-dirty-key $kb) $dirty))
 
 (= (forward-agenda-dirty? $kb)
-   (let $mdirty (catch (get-state (forward-agenda-dirty-key $kb)))
+   (let $mdirty (catch (chainer-cell-get (forward-agenda-dirty-key $kb)))
       (if-error $mdirty true $mdirty)))
 
 (= (forward-current-agenda-gen $kb)
-   (let $mgen (catch (get-state (forward-agenda-gen-key $kb)))
+   (let $mgen (catch (chainer-cell-get (forward-agenda-gen-key $kb)))
       (if-error $mgen 0 $mgen)))
 
 (= (forward-current-query-run-gen $kb)
-   (let $mgen (catch (get-state (forward-query-run-gen-key $kb)))
+   (let $mgen (catch (chainer-cell-get (forward-query-run-gen-key $kb)))
       (if-error $mgen 0 $mgen)))
 
 (= (forward-next-agenda-gen $kb)
    (let*
       (($gen (+ 1 (forward-current-agenda-gen $kb)))
-        ($_ (change-state! (forward-agenda-gen-key $kb) $gen)))
+        ($_ (chainer-cell-write! (forward-agenda-gen-key $kb) $gen)))
       $gen))
 
 (= (forward-next-query-run-gen $kb)
    (let*
       (($gen (+ 1 (forward-current-query-run-gen $kb)))
-        ($_ (change-state! (forward-query-run-gen-key $kb) $gen)))
+        ($_ (chainer-cell-write! (forward-query-run-gen-key $kb) $gen)))
       $gen))
 
 (= (forward-current-agenda-scope $kb)
-   (let $mscope (catch (get-state (forward-agenda-scope-key $kb)))
+   (let $mscope (catch (chainer-cell-get (forward-agenda-scope-key $kb)))
       (if-error $mscope (kb $kb) $mscope)))
 
-(= (forward-set-agenda-scope $kb $scope) (change-state! (forward-agenda-scope-key $kb) $scope))
+(= (forward-set-agenda-scope $kb $scope) (chainer-cell-write! (forward-agenda-scope-key $kb) $scope))
 
 (= (forward-new-query-scope $kb) (fwd_query_scope $kb (forward-next-query-run-gen $kb)))
 
@@ -75,7 +75,7 @@
    (let*
       (($state-key (forward-pending-state-key $fact))
         ($gen (forward-current-agenda-gen (forward-fact-kb $fact)))
-        ($entry (catch (get-state $state-key))))
+        ($entry (catch (chainer-cell-get $state-key))))
       (if-error $entry
          0.0
          (if (= $entry (pending $stored-key $stored-gen $score))
@@ -83,12 +83,12 @@
             0.0))))
 
 (= (clear-forward-pending-score $fact)
-   (change-state!
+   (chainer-cell-write!
       (forward-pending-state-key $fact)
       (pending () (forward-current-agenda-gen (forward-fact-kb $fact)) 0.0)))
 
 (= (set-forward-pending-score $fact $score)
-   (change-state!
+   (chainer-cell-write!
       (forward-pending-state-key $fact)
       (pending (forward-fact-key $fact) (forward-current-agenda-gen (forward-fact-kb $fact)) $score)))
 

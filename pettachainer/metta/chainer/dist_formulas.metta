@@ -3,8 +3,8 @@
 (= (tv-probability $tv) (if (= $tv (STV $s $c)) (clamp01 (* $s $c)) 1.0))
 
 (= (next-particle-id)
-   (let $mn (catch (get-state particleid))
-      (let $n (if-error $mn 0 $mn) (progn (change-state! particleid (+ $n 1)) $n))))
+   (let $mn (catch (chainer-cell-get particleid))
+      (let $n (if-error $mn 0 $mn) (progn (chainer-cell-write! particleid (+ $n 1)) $n))))
 
 (= (particle-dist-id $pd) (case $pd (((ParticleDist $pid $_scale) $pid))))
 
@@ -26,7 +26,7 @@
 
 (= (ParticleStoreCount) (list-count (collapse (match &particle_store (particle $pid $x $w) ($pid $x $w)))))
 
-(= (ParticleStoreClear) (progn (remove-all-atoms &particle_store) (change-state! particleid 0)))
+(= (ParticleStoreClear) (progn (remove-all-atoms &particle_store) (chainer-cell-write! particleid 0)))
 
 (= (particle-ids-in-term (ParticleDist $pid $_scale)) ($pid))
 (= (particle-ids-in-term $term)
@@ -50,7 +50,7 @@
               ()
               $atoms))
         ($maxid (fold-flat (|-> ($acc $pid) (max $acc $pid)) -1 $keep))
-        ($_reset (change-state! particleid (+ $maxid 1))))
+        ($_reset (chainer-cell-write! particleid (+ $maxid 1))))
       (ParticleStoreCount)))
 
 (= (particle-neff-from-pairs $pairs)
@@ -94,10 +94,10 @@
 
 (= (particle-budget-default) 512)
 
-(= (ParticleSetBudget $n) (change-state! particle_budget $n))
+(= (ParticleSetBudget $n) (chainer-cell-write! particle_budget $n))
 
 (= (ParticleGetBudget)
-   (let $mb (catch (get-state particle_budget)) (if-error $mb (particle-budget-default) $mb)))
+   (let $mb (catch (chainer-cell-get particle_budget)) (if-error $mb (particle-budget-default) $mb)))
 
 (= (particle-budget) (ParticleGetBudget))
 

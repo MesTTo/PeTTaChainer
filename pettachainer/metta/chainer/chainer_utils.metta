@@ -115,9 +115,9 @@
 (= (bounded-agenda-target-size $steps) (min 1000 (max 1 $steps)))
 (= (bounded-agenda-prune-factor) 64)
 
-(= (set-bounded-agenda-pruning $enabled) (change-state! bounded_agenda_pruning $enabled))
+(= (set-bounded-agenda-pruning $enabled) (chainer-cell-write! bounded_agenda_pruning $enabled))
 (= (bounded-agenda-pruning?)
-   (let $enabled (catch (get-state bounded_agenda_pruning))
+   (let $enabled (catch (chainer-cell-get bounded_agenda_pruning))
       (if-error $enabled true $enabled)))
 
 (= (heap-take-best $count $src $dst)
@@ -184,9 +184,9 @@
 
 (= (next-search-id $key)
    (let*
-      (($mn (catch (get-state $key)))
+      (($mn (catch (chainer-cell-get $key)))
         ($n (if-error $mn 0 $mn)))
-      (progn (change-state! $key (+ $n 1)) $n)))
+      (progn (chainer-cell-write! $key (+ $n 1)) $n)))
 
 (= (next-gid) (next-search-id bwd_gid))
 

@@ -10,9 +10,9 @@
 
 (= (nextctx)
    (let*
-      (($mn (catch (get-state ctxid)))
+      (($mn (catch (chainer-cell-get ctxid)))
         ($n (if-error $mn 0 $mn)))
-      (progn (change-state! ctxid (+ $n 1)) $n)))
+      (progn (chainer-cell-write! ctxid (+ $n 1)) $n)))
 
 (= (extract-vars $expr)
    (if (is-var $expr) ($expr)
@@ -558,10 +558,10 @@
 (= (context-polymorphic-facts-key $kb) (atom_concat context_polymorphic_facts_ $kb))
 
 (= (set-context-polymorphic-facts $kb $enabled)
-   (change-state! (context-polymorphic-facts-key $kb) $enabled))
+   (chainer-cell-write! (context-polymorphic-facts-key $kb) $enabled))
 
 (= (context-polymorphic-facts? $kb)
-   (let $menabled (catch (get-state (context-polymorphic-facts-key $kb)))
+   (let $menabled (catch (chainer-cell-get (context-polymorphic-facts-key $kb)))
       (if-error $menabled false $menabled)))
 
 (= (compile-fact-kb $kb)

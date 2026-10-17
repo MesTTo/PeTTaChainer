@@ -409,13 +409,13 @@
    (atom_concat backward_premise_prefilter_ $kb))
 
 (= (set-backward-premise-prefilter $kb $enabled)
-   (change-state! (backward-premise-prefilter-key $kb) $enabled))
+   (chainer-cell-write! (backward-premise-prefilter-key $kb) $enabled))
 
 (= (backward-premise-prefilter? $goal)
    (let $kb (compiled-row-kbid $goal)
       (if (== $kb ()) false
          (let $enabled
-            (catch (get-state (backward-premise-prefilter-key $kb)))
+            (catch (chainer-cell-get (backward-premise-prefilter-key $kb)))
             (if-error $enabled false $enabled)))))
 
 (= (prefilter-ground-ordinary-premise? $premise)
@@ -568,9 +568,9 @@
              true))
        ($_reset
           (progn
-             (change-state! bwd_gid 0)
-             (change-state! bwd_pid 0)
-             (change-state! bwd_live_epoch 0)
+             (chainer-cell-write! bwd_gid 0)
+             (chainer-cell-write! bwd_pid 0)
+             (chainer-cell-write! bwd_live_epoch 0)
              true))
        ($root-gid (ensure-goal-at-depth $goal 0))
        ($agenda0 (schedule-goal-heap (empty_heap) 1.0 $root-gid))
@@ -593,9 +593,9 @@
              true))
        ($_reset
           (progn
-             (change-state! bwd_gid 0)
-             (change-state! bwd_pid 0)
-             (change-state! bwd_live_epoch 0)
+             (chainer-cell-write! bwd_gid 0)
+             (chainer-cell-write! bwd_pid 0)
+             (chainer-cell-write! bwd_live_epoch 0)
              true))
        ($root-gid (ensure-goal-at-depth $goal 0))
        ($agenda0 (schedule-goal-heap (empty_heap) 1.0 $root-gid))

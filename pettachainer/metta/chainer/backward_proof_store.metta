@@ -147,7 +147,7 @@
    (materialize-proof-list-to-kb (goal-live-proof-ids $gid)))
 
 (= (proof-live-cache-epoch)
-   (let $n (get-state bwd_live_epoch) (if-error $n 0 $n)))
+   (let $n (chainer-cell-get bwd_live_epoch) (if-error $n 0 $n)))
 
 (= (clear-proof-live-caches)
    (progn
@@ -158,7 +158,7 @@
 (= (invalidate-proof-live-caches)
    (let $epoch (proof-live-cache-epoch)
       (progn
-         (change-state! bwd_live_epoch (+ $epoch 1))
+         (chainer-cell-write! bwd_live_epoch (+ $epoch 1))
          (clear-proof-live-caches))))
 
 (= (cache-proof-live! $pid $alive)
