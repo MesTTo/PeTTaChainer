@@ -30,7 +30,7 @@
 !(test
    (length
       (collapse
-         (match ccls_head_index
+         (match &ccls_head_index
             ((fwd_trigger specializationRuleFirstKb any) $id)
             $id)))
    0)
@@ -70,7 +70,7 @@
 !(test
    (length
       (collapse
-         (match ccls_head_index
+         (match &ccls_head_index
             ((fwd_trigger specializationRuleFirstKb Friend) $id)
             $id)))
    1)
@@ -82,7 +82,7 @@
 !(test
    (length
       (collapse
-         (match ccls_head_index
+         (match &ccls_head_index
             ((fwd_trigger specializationRuleFirstKb Friend) $id)
             $id)))
    1)
@@ -115,7 +115,7 @@
 !(test
    (let $names
       (collapse
-         (match rules
+         (match &rules
             ($id
                ((Friend $right $left)
                   (specializationDistinctKb $ctx $vars)

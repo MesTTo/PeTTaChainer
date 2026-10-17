@@ -52,14 +52,14 @@
    1)
 
 !(test
-   (match rules
+   (match &rules
       ($id (: (kb $ctx $vars) (foldRule cpu) (ScoreTotal $total) $tv)
          ((CPU FoldAllCompiled $call $total) (CPU MpFormula ((STV 1.0 1.0) (STV 1.0 1.0)) $tv)))
       ok)
    ())
 
 !(test
-   (match rules
+   (match &rules
       ($id (: (kb $ctx $vars) (foldRule $prem) (ScoreTotal $total) $tv)
          ((: $_kb $_prf (CPU FoldAllCompiled $call $total) $_cpu-tv)
             (CPU MpFormula ((STV 1.0 1.0) $_cpu-tv) $tv)))
@@ -91,7 +91,7 @@
       (STV 1.0 1.0)))
 
 !(test
-   (match rules
+   (match &rules
       ($id (: (kb $ctx $vars) (foldValueShapeRule cpu) (ScoreDist $dist) $tv)
          ((CPU FoldAllCompiled $call $dist) (CPU MpFormula ((STV 1.0 1.0) (STV 1.0 1.0)) $tv)))
       ok)
@@ -104,7 +104,7 @@
       (STV 1.0 1.0)))
 
 !(test
-   (match rules
+   (match &rules
       ($id (: (kb $ctx $vars) (avgShapeRule cpu) (AvgScoreDist $avgDist) $tv)
          ((CPU FoldAllCompiled $call $avgDist) (CPU MpFormula ((STV 1.0 1.0) (STV 1.0 1.0)) $tv)))
       ok)
@@ -117,7 +117,7 @@
       (STV 1.0 1.0)))
 
 !(test
-   (match rules
+   (match &rules
       ($id
          (: (kb MAIN Nil) (conjunction $fact-prf cpu) (And (Count $name $n) (CPU NotEqual ($name MissingTotal) true)) $tv)
          ((: (kb MAIN Nil) $fact-prf (Count $name $n) $count-tv) (CPU NotEqual ($name MissingTotal) true)

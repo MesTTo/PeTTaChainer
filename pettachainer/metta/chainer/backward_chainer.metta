@@ -265,7 +265,7 @@
 (= (wildcard-premise-context? $kb)
    (if (is-expr $kb) (not (== (car-atom (cdr-atom $kb)) MAIN)) false))
 (= (wildcard-premise-context-active? $kb)
-   (not (== (collapse (once (match wildcard_premise_context ($kb) true))) ())))
+   (not (== (collapse (once (match &wildcard_premise_context ($kb) true))) ())))
 (= (wildcard-to-query-var $x) (if (== $x #) $any $x))
 (= (wildcard-premise-result $type $kb $prf $tv $stored-type)
    (if (contains-hash? $stored-type)
@@ -275,11 +275,11 @@
 (= (direct-wildcard-premise-results $type $kb $prf $tv)
    (if (and (wildcard-premise-context? $kb) (wildcard-premise-context-active? $kb))
       (superpose
-         ((match wildcard_premise_index (wildcard_any $kb $stored-type $prf $tv)
+         ((match &wildcard_premise_index (wildcard_any $kb $stored-type $prf $tv)
              (wildcard-premise-result $type $kb $prf $tv $stored-type))
           (if (is-expr $type)
              (let $head (car-atom $type)
-                (match wildcard_premise_index ((wildcard_premise_head $head) $kb $stored-type $prf $tv)
+                (match &wildcard_premise_index ((wildcard_premise_head $head) $kb $stored-type $prf $tv)
                    (wildcard-premise-result $type $kb $prf $tv $stored-type)))
              (empty))))
       (empty)))
@@ -350,8 +350,8 @@
       false))
 
 (= (rule-goal-head-view-for-key ($goal $parent-gid) $key)
-   (match ccls_head_index ($key $rule-id)
-      (match rules ($rule-id $goal $args)
+   (match &ccls_head_index ($key $rule-id)
+      (match &rules ($rule-id $goal $args)
          ($rule-id $args $goal $parent-gid))))
 
 (= (rule-goal-head-view ($goal $parent-gid))
@@ -370,8 +370,8 @@
       false))
 
 (= (rule-goal-full-view ($goal $parent-gid))
-   (match ccls_index ($goal $rule-id)
-      (match rules ($rule-id $goal $args)
+   (match &ccls_index ($goal $rule-id)
+      (match &rules ($rule-id $goal $args)
          ($rule-id (contextualize-rule-args $goal $args) $goal $parent-gid))))
 
 (= (same-var-in-list? $_var ()) false)
@@ -492,7 +492,7 @@
 
 (= (rule-expected-score $rule-id $goal $args)
    (if (if (= $goal ($_type $_kb $_proof $tv)) (is-var $tv) false)
-      (let $hits (collapse (match rule_expected ($rule-id $score) $score))
+      (let $hits (collapse (match &rule_expected ($rule-id $score) $score))
          (if (== $hits ())
             (premises-expected-confidence (copy_term $args))
             (car-atom $hits)))

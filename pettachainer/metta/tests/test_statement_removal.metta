@@ -36,7 +36,7 @@
    (not
       (==
          (collapse
-            (match implication_index
+            (match &implication_index
                (removalRuleKb (RuleSeed) (RuleGoal) removableRule $_tv)
                true))
          ()))
@@ -47,7 +47,7 @@
 !(test (rule-evidence-registered? removalRuleKb removableRule) false)
 !(test
    (collapse
-      (match implication_index
+      (match &implication_index
          (removalRuleKb $_premise $_conclusion removableRule $_tv)
          true))
    ())
@@ -81,7 +81,7 @@
    (not
       (==
          (collapse
-            (match ccls_head_index
+            (match &ccls_head_index
                ((fwd_trigger removalOpenHeadKb any) $id)
                $id))
          ()))
@@ -90,7 +90,7 @@
 !(test (RemovalHasAnswer removalOpenHeadKb (Friend alice bob)) false)
 !(test
    (collapse
-      (match ccls_head_index
+      (match &ccls_head_index
          ((fwd_trigger removalOpenHeadKb any) $id)
          $id))
    ())
@@ -186,7 +186,7 @@
 !(test (RemovalHasAnswer removalSpecializedKb (Friend left right)) false)
 !(test
    (collapse
-      (match ccls_head_index
+      (match &ccls_head_index
          ((fwd_trigger removalSpecializedKb Friend) $id)
          $id))
    ())
@@ -237,7 +237,7 @@
    (not
       (==
          (collapse
-            (match wildcard_premise_index
+            (match &wildcard_premise_index
                ($_key
                   (removalWildcardKb $_ctx $_vars)
                   $_type
@@ -249,7 +249,7 @@
 !(test (remove-compiled-statement removalWildcardKb removableWildcard) 1)
 !(test
    (collapse
-      (match wildcard_premise_index
+      (match &wildcard_premise_index
          ($_key
             (removalWildcardKb $_ctx $_vars)
             $_type
@@ -259,7 +259,7 @@
    ())
 !(test
    (collapse
-      (match wildcard_premise_context
+      (match &wildcard_premise_context
          ((removalWildcardKb $_ctx $_vars))
          true))
    ())

@@ -276,7 +276,7 @@
                         (compile-adapter-chain plain (: $kb $prfa $exec-type $atv))))
             (empty)))))
 
-(= (add-query-add-to-ctx $expr) (add-atom ctx $expr))
+(= (add-query-add-to-ctx $expr) (add-atom &ctx $expr))
 
 (= (lower-source-premise-non-open $kb $ctx $vars $premise)
    (if (compound-source? $premise)
@@ -585,7 +585,7 @@
 (= (disable-inversion-proof-id? $prf) (= $prf (no_inverse $_)))
 
 (= (index-source-implication $kb (: $prf (Implication (cons Premises ($premise)) (cons Conclusions ($conclusion))) $tv))
-   (reduce (chainer-add-atom implication_index ($kb $premise $conclusion $prf $tv))))
+   (reduce (chainer-add-atom &implication_index ($kb $premise $conclusion $prf $tv))))
 (= (index-source-implication $_kb $_stmt) ())
 
 (= (complement-premise (Not $premise)) $premise)
@@ -597,7 +597,7 @@
        ($hits
           (collapse
              (once
-                (match implication_index ($kb $comp $conclusion $_prf $tv)
+                (match &implication_index ($kb $comp $conclusion $_prf $tv)
                    $tv)))))
       (if (== $hits ()) $fallback (car-atom $hits))))
 
@@ -606,7 +606,7 @@
       (==
          (collapse
             (once
-               (match implication_index ($kb $premise $conclusion $_prf $_tv)
+               (match &implication_index ($kb $premise $conclusion $_prf $_tv)
                   true)))
          ())))
 
@@ -825,7 +825,7 @@
 
 
 (= (mm2compile $kb $stmt)
-   (progn (remove-all-atoms ctx) (superpose ((mm2stmt (compile $kb $stmt)) (get-atoms ctx)))))
+   (progn (remove-all-atoms &ctx) (superpose ((mm2stmt (compile $kb $stmt)) (get-atoms &ctx)))))
 
 (= (mm2stmt $stmt) (case $stmt (((() |- ($ccl)) $ccl) (($prms |- ($ccl)) (rules ($prms |- $ccl))))))
 

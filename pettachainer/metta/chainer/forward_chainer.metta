@@ -147,8 +147,8 @@
 (= (forward-rule-results-for-key $steps $kb $fact $key)
    (collapse
       (let*
-         ((($id $idx) (match prem_index ($key $fact $id $idx) ($id $idx)))
-           (($id $ccls $prems) (match rules ($id $ccls $prems) ($id $ccls $prems)))
+         ((($id $idx) (match &prem_index ($key $fact $id $idx) ($id $idx)))
+           (($id $ccls $prems) (match &rules ($id $ccls $prems) ($id $ccls $prems)))
            ($rprems (nth0 $idx $prems $fact)))
          (forward-satisfy-premises $steps $rprems $ccls))))
 

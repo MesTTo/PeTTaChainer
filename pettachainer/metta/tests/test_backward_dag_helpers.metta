@@ -126,7 +126,7 @@
 !(test
    (collapse
       (once
-         (match rules
+         (match &rules
             ($id
                ((InverseTotalA)
                   (inverseTotalKb $ctx $vars)
