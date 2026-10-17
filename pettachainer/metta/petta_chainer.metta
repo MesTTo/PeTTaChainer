@@ -113,3 +113,36 @@
             (progn
                (rebuild-compiled-kb! $kb)
                $removed)))))
+
+; Forget every knowledge base and every run: compiled rows and their indexes, source events,
+; temporary query rows, the proof store, particles and the chainer's cells. What loading
+; declared, the logic configuration and the functions, stays, so the chainer answers as if
+; just loaded. A host that warms the chainer outside a discarding scope calls this afterwards.
+(= (chainer-reset!)
+   (progn
+      (remove-all-atoms &kb)
+      (remove-all-atoms &rules)
+      (remove-all-atoms &prem_index)
+      (remove-all-atoms &ccls_index)
+      (remove-all-atoms &ccls_head_index)
+      (remove-all-atoms &rule_expected)
+      (remove-all-atoms &rule_kb_index)
+      (remove-all-atoms &implication_index)
+      (remove-all-atoms &wildcard_premise_index)
+      (remove-all-atoms &wildcard_premise_context)
+      (remove-all-atoms &ctx)
+      (remove-all-atoms &rule_evidence_names)
+      (remove-all-atoms &spec_template)
+      (remove-all-atoms &spec_done)
+      (remove-all-atoms &kb_source_events)
+      (remove-all-atoms &temp_query_ref)
+      (remove-all-atoms &goal)
+      (remove-all-atoms &goal_lookup)
+      (remove-all-atoms &goal_waiter)
+      (remove-all-atoms &aggregate)
+      (remove-all-atoms &proof)
+      (remove-all-atoms &proof_live_cache)
+      (remove-all-atoms &goal_live_cache)
+      (remove-all-atoms &particle_store)
+      (remove-all-atoms &chainer_cells)
+      true))
