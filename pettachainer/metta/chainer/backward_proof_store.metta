@@ -17,13 +17,15 @@
 (= (proof-output-key-by-id $pid)
    (candidate-output-key (proof-output-atom $pid)))
 
+; am[implements a-pc-is-var-bound-1018@d0a970]
 (= (materialize-proof-refs $term)
    (if (is-expr $term)
-      (if (is-var (car-atom $term))
-         (cons (car-atom $term) (map-flat materialize-proof-refs (cdr-atom $term)))
-         (if (== (car-atom $term) proof-ref)
-            (materialize-proof-refs (materialize-proof (car-atom (cdr-atom $term))))
-            (cons (materialize-proof-refs (car-atom $term)) (map-flat materialize-proof-refs (cdr-atom $term)))))
+      (let $head (car-atom $term)
+         (if (is-var $head)
+            (cons $head (map-flat materialize-proof-refs (cdr-atom $term)))
+            (if (== $head proof-ref)
+               (materialize-proof-refs (materialize-proof (car-atom (cdr-atom $term))))
+               (cons (materialize-proof-refs $head) (map-flat materialize-proof-refs (cdr-atom $term))))))
       $term))
 
 (= (materialize-result-atom $atom)
@@ -84,14 +86,16 @@
                (if (== $tail2 ()) $term
                   (car-atom $tail2)))))
       $term))
+; am[implements a-pc-is-var-bound-1018@d0a970]
 (= (materialize-rule-proof-expression $rule-prf)
    (if (is-expr $rule-prf)
-      (if (is-var (car-atom $rule-prf))
-         (if (== (cdr-atom $rule-prf) ())
-            $rule-prf
-            (car-atom (cdr-atom $rule-prf)))
-         (cons rule-proof
-            (cons (car-atom $rule-prf) (cdr-atom $rule-prf))))
+      (let $head (car-atom $rule-prf)
+         (if (is-var $head)
+            (if (== (cdr-atom $rule-prf) ())
+               $rule-prf
+               (car-atom (cdr-atom $rule-prf)))
+            (cons rule-proof
+               (cons $head (cdr-atom $rule-prf)))))
       $rule-prf))
 (= (materialize-proof-kind (rule $term) $pid)
    (let $prf (rule-kind-proof-token $term)

@@ -344,8 +344,16 @@
                  (bundle-from-execs ((: ($kb $ctx $vars) $prf ($rel $a $b) $tv)) $tv $prf)))
            ($other (bundle-from-execs ((: ($kb $ctx $vars) $prf $other $tv)) $tv $prf))))))
 
+; True for an expression whose head is a variable, as in the open premise ($p $x). pymetta holds
+; is-var's argument unreduced, so (is-var (car-atom $x)) would test the call itself and answer
+; False there; the head is bound first, and both engines test the head.
+; am[implements a-pc-is-var-bound-1018@d0a970]
+(= (expr-head-var? $x)
+   (if (is-expr $x) (let $head (car-atom $x) (is-var $head)) false))
+
+; am[implements a-pc-is-var-bound-1018@d0a970]
 (= (lower-source-premise $kb $ctx $vars $premise)
-   (if (and (is-expr $premise) (is-var (car-atom $premise)))
+   (if (expr-head-var? $premise)
       (if (== (cdr-atom $premise) ())
          (leaf-source-bundle $kb $ctx $vars (car-atom $premise))
          (leaf-source-bundle $kb $ctx $vars $premise))
@@ -397,8 +405,9 @@
                   (Implication Compute MapDist Map2Dist AverageDist FoldAllValue FoldAll Not GreaterThan >)))))
       true))
 
+; am[implements a-pc-is-var-bound-1018@d0a970]
 (= (lower-source-premise-with-existentials $kb $ctx $vars $premise)
-   (if (and (is-expr $premise) (and (not (is-var (car-atom $premise))) (== (car-atom $premise) ExistentialFold)))
+   (if (and (is-expr $premise) (and (not (expr-head-var? $premise)) (== (car-atom $premise) ExistentialFold)))
       (let $args (cdr-atom $premise)
          (fold-existential-premise-bundle $kb $ctx $vars (car-atom $args) (car-atom (cdr-atom $args))))
       (lower-source-premise $kb $ctx $vars $premise)))
