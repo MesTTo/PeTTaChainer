@@ -161,24 +161,41 @@
          (chainer-cell-write! bwd_live_epoch (+ $epoch 1))
          (clear-proof-live-caches))))
 
+; The liveness caches memoise proof-live-compute and goal-live-proof-ids-compute within one
+; epoch: each row holds a value those computed, and every change to what they read, a stored
+; proof, a new aggregate row or a changed current proof, empties both. A match pattern and the
+; atom of remove-atom hold a call as data on PeTTa and pymetta alike, so a pattern written
+; ((proof-live-cache-epoch) $pid $alive) never meets the (0 $pid $alive) rows the stores keep;
+; every operation binds the epoch first.
+; am[implements a-pc-live-cache-pure-memo-1018@d3f8a0]
 (= (cache-proof-live! $pid $alive)
-   (chainer-add-atom &proof_live_cache ((proof-live-cache-epoch) $pid $alive)))
+   (let $epoch (proof-live-cache-epoch)
+      (chainer-add-atom &proof_live_cache ($epoch $pid $alive))))
 
+; am[implements a-pc-live-cache-pure-memo-1018@d3f8a0]
 (= (cached-proof-live? $pid)
-   (match &proof_live_cache ((proof-live-cache-epoch) $pid $alive) $alive))
+   (let $epoch (proof-live-cache-epoch)
+      (match &proof_live_cache ($epoch $pid $alive) $alive)))
 
+; am[implements a-pc-live-cache-pure-memo-1018@d3f8a0]
 (= (goal-live-cache-store! $gid $pids)
-   (chainer-add-atom &goal_live_cache ((proof-live-cache-epoch) $gid $pids)))
+   (let $epoch (proof-live-cache-epoch)
+      (chainer-add-atom &goal_live_cache ($epoch $gid $pids))))
 
+; am[implements a-pc-live-cache-pure-memo-1018@d3f8a0]
 (= (goal-live-cache-remove! $gid $pids)
-   (remove-atom &goal_live_cache ((proof-live-cache-epoch) $gid $pids)))
+   (let $epoch (proof-live-cache-epoch)
+      (remove-atom &goal_live_cache ($epoch $gid $pids))))
 
+; am[implements a-pc-live-cache-pure-memo-1018@d3f8a0]
 (= (cached-goal-live-proof-ids $gid)
-   (match &goal_live_cache ((proof-live-cache-epoch) $gid $pids) $pids))
+   (let $epoch (proof-live-cache-epoch)
+      (match &goal_live_cache ($epoch $gid $pids) $pids)))
 
+; am[implements a-pc-live-cache-pure-memo-1018@d3f8a0]
 (= (append-goal-live-cache! $gid $pid)
    (let*
-      (($hits (collapse (once (match &goal_live_cache ((proof-live-cache-epoch) $gid $pids) $pids)))))
+      (($hits (collapse (once (cached-goal-live-proof-ids $gid)))))
       (if (== $hits ())
          ()
          (let*
@@ -705,6 +722,7 @@
       (proof-candidate-stored-evidence (proof-candidate $kind $score $ev $children))
       $children))
 
+; am[implements a-pc-live-cache-pure-memo-1018@d3f8a0]
 (= (store-proof-candidate $gid (proof-candidate $kind $score $ev $children))
    (let*
       (($pid (next-pid))
@@ -713,7 +731,6 @@
         ($_store
            (progn
               (chainer-add-atom &proof ($pid $gid $output $kind $score $stored-ev $children))
-              (cache-proof-live! $pid true)
               (remove-all-atoms &goal_live_cache)
               ())))
       $pid))
@@ -794,14 +811,11 @@
        (($_current-score $current-ev) (proof-stats-by-id $current-pid)))
       (or (not (== $current-output $result)) (not (== $current-ev $ev)))))
 
+; am[implements a-pc-live-cache-pure-memo-1018@d3f8a0]
 (= (commit-aggregate-snapshot-heap $agenda $agg-gid $result $ev $children)
    (let*
       ((($child-gid $args $base-score $pending $current-pid) (reduce (aggregate-by-id $agg-gid)))
        ($pid (store-proof-candidate $agg-gid (aggregate-result-candidate $result $ev $children)))
-       ($_set
-          (progn
-             (remove-atom &aggregate ($agg-gid $child-gid $args $base-score $pending $current-pid))
-             (chainer-add-atom &aggregate ($agg-gid $child-gid $args $base-score $pending $pid))))
-       ($_cache-invalidate (invalidate-proof-live-caches))
+       ($_set (replace-aggregate-row! ($agg-gid $child-gid $args $base-score $pending $current-pid) $pending $pid))
        ($nagenda (wake-proof-commit-heap $agenda $agg-gid $pid)))
       $nagenda))

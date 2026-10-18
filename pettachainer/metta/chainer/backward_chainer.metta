@@ -4,6 +4,22 @@
    (match &aggregate ($agg-gid $child-gid $args $base-score $pending $current-pid)
       ($child-gid $args $base-score $pending $current-pid)))
 
+; Every write of an aggregate's row goes through these two. Whether the row exists and which
+; proof it holds as current decide which of the aggregate's proofs are live, so a new row or a
+; changed current proof empties the liveness caches; a changed pending score alone does not.
+; am[implements a-pc-live-cache-pure-memo-1018@d3f8a0]
+(= (add-aggregate-row! $agg-gid $child-gid $args $base-score)
+   (progn
+      (chainer-add-atom &aggregate ($agg-gid $child-gid $args $base-score 0.0 ()))
+      (invalidate-proof-live-caches)))
+
+; am[implements a-pc-live-cache-pure-memo-1018@d3f8a0]
+(= (replace-aggregate-row! ($agg-gid $child-gid $args $base-score $pending $current-pid) $next-pending $next-current-pid)
+   (progn
+      (remove-atom &aggregate ($agg-gid $child-gid $args $base-score $pending $current-pid))
+      (chainer-add-atom &aggregate ($agg-gid $child-gid $args $base-score $next-pending $next-current-pid))
+      (if (== $current-pid $next-current-pid) () (invalidate-proof-live-caches))))
+
 (= (ensure-goal-at-depth $goal $depth)
    (let*
       (($stored-goal (copy_term $goal))
@@ -38,6 +54,7 @@
                       (chainer-add-atom &goal ($gid $depth $goal $expanded $score)))))
                $nagenda)))))
 
+; am[implements a-pc-live-cache-pure-memo-1018@d3f8a0]
 (= (schedule-aggregate-heap $agenda $agg-gid)
    (let*
       ((($child-gid $args $base-score $current $current-pid) (aggregate-by-id $agg-gid))
@@ -46,10 +63,7 @@
          (let*
             (($priority (+ (+ (* 1000000000.0 (+ 1 $depth)) (- 0 (* 1000000.0 $base-score))) 0.1))
              ($nagenda (add_to_heap $agenda $priority (qagg $base-score $agg-gid)))
-             ($_set
-                (progn
-                   (remove-atom &aggregate ($agg-gid $child-gid $args $base-score $current $current-pid))
-                   (chainer-add-atom &aggregate ($agg-gid $child-gid $args $base-score $base-score $current-pid)))))
+             ($_set (replace-aggregate-row! ($agg-gid $child-gid $args $base-score $current $current-pid) $base-score $current-pid)))
             $nagenda))))
 
 (=
@@ -130,6 +144,7 @@
        ($nagenda (schedule-goal-heap $agenda1 $score $gid)))
       $nagenda))
 
+; am[implements a-pc-live-cache-pure-memo-1018@d3f8a0]
 (= (spawn-aggregate-goal-heap $agenda $score $agg-gid $goal-view)
    (let*
       (($args (copy_term (let (CPU $_agg-fun $args $_goalres) $goal-view $args)))
@@ -139,7 +154,7 @@
        ($hits (collapse (once (match &aggregate ($agg-gid $_child $_args $_base $_pending1 $_current) true))))
        ($_agg
           (if (== $hits ())
-             (chainer-add-atom &aggregate ($agg-gid $child-gid $args $score 0.0 ()))
+             (add-aggregate-row! $agg-gid $child-gid $args $score)
              ()))
        ($_wait (chainer-add-atom &goal_waiter ($child-gid (aggregate-waiter $agg-gid))))
        ($agenda1 (schedule-goal-heap $agenda $score $child-gid))
@@ -221,21 +236,20 @@
          $accepted
          (aggregate-result-candidate $result $ev $children))))
 
+; am[implements a-pc-live-cache-pure-memo-1018@d3f8a0]
 (= (append-grouped-aggregate-current-pid! $agg-gid $pid)
    (let*
       ((($child-gid $args $base-score $pending $current-pids) (aggregate-by-id $agg-gid))
        ($next-pids (cons $pid $current-pids)))
-      (progn
-         (remove-atom &aggregate ($agg-gid $child-gid $args $base-score $pending $current-pids))
-         (chainer-add-atom &aggregate ($agg-gid $child-gid $args $base-score $pending $next-pids)))))
+      (replace-aggregate-row! ($agg-gid $child-gid $args $base-score $pending $current-pids) $pending $next-pids)))
 
+; am[implements a-pc-live-cache-pure-memo-1018@d3f8a0]
 (= (commit-grouped-aggregate-candidate-heap $agenda $agg-gid $accepted (proof-candidate $kind $score $ev $children))
    (if (== $accepted false) $agenda
       (if (candidate-is-cyclic? $agg-gid $kind $children) $agenda
          (let*
             (($pid (store-proof-candidate $agg-gid (proof-candidate $kind $score $ev $children)))
-             ($_set (append-grouped-aggregate-current-pid! $agg-gid $pid))
-             ($_cache-invalidate (invalidate-proof-live-caches)))
+             ($_set (append-grouped-aggregate-current-pid! $agg-gid $pid)))
             (wake-proof-commit-heap $agenda $agg-gid $pid)))))
 
 (= (run-grouped-aggregate-heap $agenda $agg-gid $child-gid $args)
@@ -243,15 +257,13 @@
       $agenda
       (grouped-aggregate-final-states $agg-gid $child-gid $args)))
 
+; am[implements a-pc-live-cache-pure-memo-1018@d3f8a0]
 (= (run-aggregate-heap $agenda $agg-gid)
    (let*
       ((($child-gid $args $base-score $pending $current-pid) (aggregate-by-id $agg-gid))
        ($grouped? (aggregate-args-grouped? $args))
        ($next-current-pid (if $grouped? () $current-pid))
-       ($_clear
-          (progn
-             (remove-atom &aggregate ($agg-gid $child-gid $args $base-score $pending $current-pid))
-             (chainer-add-atom &aggregate ($agg-gid $child-gid $args $base-score 0.0 $next-current-pid)))))
+       ($_clear (replace-aggregate-row! ($agg-gid $child-gid $args $base-score $pending $current-pid) 0.0 $next-current-pid)))
       (if $grouped?
          (run-grouped-aggregate-heap $agenda $agg-gid $child-gid $args)
          (let*
